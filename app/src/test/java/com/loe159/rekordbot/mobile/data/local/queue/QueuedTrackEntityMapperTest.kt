@@ -15,6 +15,10 @@ class QueuedTrackEntityMapperTest {
             artist = "Jon Hopkins",
             spotifyUrl = "https://open.spotify.com/track/spotify-id",
             rawGenre = "Electronic",
+            energy = 5,
+            moods = listOf("Énergique", "Joyeux"),
+            situations = listOf("Peak-time", "Festival"),
+            inspirationalDjs = listOf("HUGEL", "James Hype"),
             comment = "Closing",
         )
 

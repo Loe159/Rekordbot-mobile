@@ -70,8 +70,9 @@ interface QueuedTrackDao {
     @Query(
         "UPDATE queued_tracks SET spotifyTrackId = :spotifyTrackId, title = :title, " +
             "artist = :artist, spotifyUrl = :spotifyUrl, rawGenre = :rawGenre, " +
-            "comment = :comment, updatedAt = :now " +
-            "WHERE operationId = :operationId AND status IN ('PENDING', 'FAILED')",
+            "energy = :energy, moods = :moods, situations = :situations, " +
+            "inspirationalDjs = :inspirationalDjs, comment = :comment, updatedAt = :now " +
+            "WHERE operationId = :operationId AND status IN ('DRAFT', 'PENDING', 'FAILED')",
     )
     suspend fun updateDraft(
         operationId: String,
@@ -80,9 +81,19 @@ interface QueuedTrackDao {
         artist: String,
         spotifyUrl: String,
         rawGenre: String?,
+        energy: Int?,
+        moods: List<String>,
+        situations: List<String>,
+        inspirationalDjs: List<String>,
         comment: String?,
         now: Long,
     ): Int
+
+    @Query(
+        "UPDATE queued_tracks SET status = 'PENDING', lastError = NULL, retryable = 0, " +
+            "updatedAt = :now WHERE operationId = :operationId AND status = 'DRAFT'",
+    )
+    suspend fun sendDraft(operationId: String, now: Long): Int
 
     @Query(
         "UPDATE queued_tracks SET status = 'PENDING', " +

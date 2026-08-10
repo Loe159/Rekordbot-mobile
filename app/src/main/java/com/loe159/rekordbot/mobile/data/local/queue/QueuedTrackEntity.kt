@@ -1,5 +1,6 @@
 package com.loe159.rekordbot.mobile.data.local.queue
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
@@ -14,6 +15,10 @@ data class QueuedTrackEntity(
     val artist: String,
     val spotifyUrl: String,
     val rawGenre: String?,
+    val energy: Int?,
+    @ColumnInfo(defaultValue = "'[]'") val moods: List<String>,
+    @ColumnInfo(defaultValue = "'[]'") val situations: List<String>,
+    @ColumnInfo(defaultValue = "'[]'") val inspirationalDjs: List<String>,
     val comment: String?,
     val status: QueueStatus,
     val attemptCount: Int,
@@ -34,6 +39,10 @@ internal fun QueuedTrackEntity.toDomain(): QueuedTrackOperation = QueuedTrackOpe
         artist = artist,
         spotifyUrl = spotifyUrl,
         rawGenre = rawGenre,
+        energy = energy,
+        moods = moods,
+        situations = situations,
+        inspirationalDjs = inspirationalDjs,
         comment = comment,
     ),
     status = status,
@@ -51,6 +60,7 @@ internal fun TrackDraft.toEntity(
     operationId: String,
     initialError: String,
     now: Long,
+    status: QueueStatus = QueueStatus.PENDING,
 ): QueuedTrackEntity = QueuedTrackEntity(
     operationId = operationId,
     spotifyTrackId = spotifyTrackId,
@@ -58,11 +68,15 @@ internal fun TrackDraft.toEntity(
     artist = artist,
     spotifyUrl = spotifyUrl,
     rawGenre = rawGenre,
+    energy = energy,
+    moods = moods,
+    situations = situations,
+    inspirationalDjs = inspirationalDjs,
     comment = comment,
-    status = QueueStatus.PENDING,
+    status = status,
     attemptCount = 0,
     lastError = initialError.takeIf(String::isNotBlank),
-    retryable = true,
+    retryable = status == QueueStatus.PENDING,
     createdAt = now,
     updatedAt = now,
     lastAttemptAt = null,

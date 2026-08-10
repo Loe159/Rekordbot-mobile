@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-> État actuel : **P4 — mode hors-ligne fiable**. Les saisies DJ rapides arrivent en P5 dans la [roadmap](ROADMAP.md).
+> État actuel : **P5 — saisie DJ rapide**. L’enrichissement optionnel arrive en P6 dans la [roadmap](ROADMAP.md).
 
 ## Stack
 
@@ -49,9 +49,13 @@ Les champs optionnels absents de la table peuvent être laissés vides. **Tester
 
 Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau.
 
-Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source et le statut par défaut. La stratégie de doublons se règle dans **Doublons Spotify** : elle peut bloquer un Track ID déjà présent ou autoriser sa création. Si le réseau ou Airtable est indisponible, le morceau est conservé dans Room avec un UUID d’opération stable, puis WorkManager reprend automatiquement l’envoi dès que le réseau revient.
+Avant l’envoi, les raccourcis mobiles permettent de choisir une énergie de 1 à 5, plusieurs moods, situations et DJs inspirants, puis d’ajouter un commentaire. Ces valeurs sont facultatives : l’énergie est envoyée comme nombre Airtable et les sélections multiples comme tableaux JSON, jamais comme texte concaténé.
 
-La **File d’attente** de l’accueil affiche les opérations en attente, en cours, envoyées ou en échec, ainsi que les tentatives, la dernière erreur et l’identifiant Airtable. Un échec peut être relancé ou supprimé. Les opérations interrompues sont récupérées au prochain démarrage ; avant toute nouvelle tentative incertaine, le Track ID Spotify est vérifié pour éviter une seconde création. Le modèle de file accepte déjà la mise à jour d’un brouillon non envoyé afin que P5 puisse ajouter l’édition sans migration de données.
+Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source et le statut par défaut. **Garder comme brouillon** conserve aussi un morceau incomplet dans la même base Room, sans l’envoyer. La stratégie de doublons se règle dans **Doublons Spotify** : elle peut bloquer un Track ID déjà présent ou autoriser sa création. Si le réseau ou Airtable est indisponible, le morceau est conservé dans Room avec un UUID d’opération stable, puis WorkManager reprend automatiquement l’envoi dès que le réseau revient.
+
+La **File d’attente** de l’accueil affiche les brouillons et les opérations en attente, en cours, envoyées ou en échec. Un brouillon reste modifiable, même incomplet, et n’entre dans la file d’envoi qu’après l’action **Envoyer**. Les opérations non envoyées permettent aussi de modifier la qualification DJ. Un échec peut être relancé ou supprimé. Les opérations interrompues sont récupérées au prochain démarrage ; avant toute nouvelle tentative incertaine, le Track ID Spotify est vérifié pour éviter une seconde création.
+
+Les valeurs exactes proposées sont centralisées dans `DjQualificationOptions` : moods `Sexy`, `Énergique`, `Sombre`, `Joyeux`, `Ambiant`, `Calme`, `Mystérieux`, `Triste`, situations du warm-up au B2B, et la liste de DJs inspirants utilisée dans Airtable. Leur orthographe peut ainsi évoluer à un seul endroit.
 
 ## Lancer le projet
 

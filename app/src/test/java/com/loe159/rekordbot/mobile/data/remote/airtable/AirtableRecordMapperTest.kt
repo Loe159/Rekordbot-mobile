@@ -18,6 +18,10 @@ class AirtableRecordMapperTest {
                 spotifyTrackId = "Spotify ID",
                 status = "State",
                 rawGenre = "Raw genre",
+                energy = "Rating",
+                mood = "Moods",
+                situation = "Contexts",
+                inspirationalDjs = "Inspired by",
                 comment = "Notes",
                 source = "Origin",
             ),
@@ -30,6 +34,10 @@ class AirtableRecordMapperTest {
             artist = " Jon Hopkins ",
             spotifyUrl = " https://open.spotify.com/track/track-id ",
             rawGenre = "Electronic",
+            energy = 4,
+            moods = listOf("Calme", "Mystérieux"),
+            situations = listOf("Warm-up", "Closing"),
+            inspirationalDjs = listOf("ANOTR", "Adam Ten"),
             comment = null,
         )
 
@@ -41,6 +49,12 @@ class AirtableRecordMapperTest {
         assertEquals("Inbox", fields["State"])
         assertEquals("Spotify Android", fields["Origin"])
         assertEquals("Electronic", fields["Raw genre"])
+        assertEquals(4, fields["Rating"])
+        assertEquals(listOf("Calme", "Mystérieux"), fields["Moods"])
+        assertEquals(listOf("Warm-up", "Closing"), fields["Contexts"])
+        assertEquals(listOf("ANOTR", "Adam Ten"), fields["Inspired by"])
+        assertFalse(fields["Rating"] is String)
+        assertFalse(fields["Moods"] is String)
         assertFalse(fields.containsKey("Notes"))
     }
 

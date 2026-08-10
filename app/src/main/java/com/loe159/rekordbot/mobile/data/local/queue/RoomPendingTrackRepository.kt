@@ -3,6 +3,7 @@ package com.loe159.rekordbot.mobile.data.local.queue
 import com.loe159.rekordbot.mobile.data.local.PendingTrackStore
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.queue.QueuedTrackOperation
+import com.loe159.rekordbot.mobile.domain.queue.QueueStatus
 import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +28,20 @@ class RoomPendingTrackRepository(
         operationId
     }
 
+    override suspend fun saveDraft(operationId: String, track: TrackDraft): Result<String> =
+        runCatching {
+            require(operationId.isNotBlank()) { "Identifiant de brouillon manquant." }
+            dao.insertIfAbsent(
+                track.toEntity(
+                    operationId = operationId,
+                    initialError = "",
+                    now = currentTimeMillis(),
+                    status = QueueStatus.DRAFT,
+                ),
+            )
+            operationId
+        }
+
     override suspend fun claimNext(): QueuedTrackOperation? =
         dao.claimNext(currentTimeMillis())?.toDomain()
 
@@ -44,7 +59,11 @@ class RoomPendingTrackRepository(
     override suspend fun delete(operationId: String): Boolean = dao.delete(operationId) == 1
 
     override suspend fun updateDraft(operationId: String, draft: TrackDraft): Boolean {
-        if (!draft.isReadyForAirtable) return false
+        val status = dao.get(operationId)?.status ?: return false
+        if (status !in setOf(QueueStatus.DRAFT, QueueStatus.PENDING, QueueStatus.FAILED)) {
+            return false
+        }
+        if (status != QueueStatus.DRAFT && !draft.isReadyForAirtable) return false
         return dao.updateDraft(
             operationId = operationId,
             spotifyTrackId = draft.spotifyTrackId,
@@ -52,9 +71,22 @@ class RoomPendingTrackRepository(
             artist = draft.artist,
             spotifyUrl = draft.spotifyUrl,
             rawGenre = draft.rawGenre,
+            energy = draft.energy,
+            moods = draft.moods,
+            situations = draft.situations,
+            inspirationalDjs = draft.inspirationalDjs,
             comment = draft.comment,
             now = currentTimeMillis(),
         ) == 1
+    }
+
+    override suspend fun sendDraft(operationId: String): Boolean {
+        val draft = dao.get(operationId)
+            ?.takeIf { it.status == QueueStatus.DRAFT }
+            ?.toDomain()
+            ?.draft ?: return false
+        if (!draft.isReadyForAirtable) return false
+        return dao.sendDraft(operationId, currentTimeMillis()) == 1
     }
 
     override suspend fun recoverInterrupted() {

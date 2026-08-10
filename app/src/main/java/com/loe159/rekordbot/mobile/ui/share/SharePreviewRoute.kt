@@ -66,6 +66,7 @@ fun SharePreviewRoute(
         isInitialError = resolvedResult.draft.spotifyTrackId.isBlank(),
         isMetadataLoading = enrichment == null,
         onDraftChange = viewModel::updateDraft,
+        onSaveDraft = viewModel::saveDraft,
         onSubmit = viewModel::submit,
         onBack = onBack,
     )

@@ -10,6 +10,8 @@ import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
 import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
+import com.loe159.rekordbot.mobile.domain.queue.QueueOperationIdFactory
+import com.loe159.rekordbot.mobile.domain.queue.UuidQueueOperationIdFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,8 +22,9 @@ class SharePreviewViewModel(
     initialDraft: TrackDraft,
     private val configurationRepository: AirtableConfigurationRepository,
     airtableGateway: AirtableGateway,
-    pendingTrackRepository: PendingTrackRepository,
+    private val pendingTrackRepository: PendingTrackRepository,
     private val queueWorkScheduler: QueueWorkScheduler,
+    private val operationIdFactory: QueueOperationIdFactory = UuidQueueOperationIdFactory,
 ) : ViewModel() {
     private val submitTrack = SubmitTrackToAirtable(
         configurationRepository,
@@ -62,17 +65,58 @@ class SharePreviewViewModel(
 
     fun updateDraft(transform: (TrackDraft) -> TrackDraft) {
         mutableState.update { current ->
-            if (current.isSubmitting || current.submissionResult.isComplete()) {
+            if (
+                current.isSubmitting || current.isSavingDraft ||
+                current.submissionResult.isComplete() || current.savedDraftOperationId != null
+            ) {
                 current
             } else {
-                current.copy(draft = transform(current.draft), submissionResult = null)
+                current.copy(
+                    draft = transform(current.draft),
+                    submissionResult = null,
+                    draftSaveError = null,
+                )
             }
+        }
+    }
+
+    fun saveDraft() {
+        val current = state.value
+        if (
+            current.isSubmitting || current.isSavingDraft ||
+            current.savedDraftOperationId != null
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+            mutableState.update { it.copy(isSavingDraft = true, draftSaveError = null) }
+            val operationId = operationIdFactory.create()
+            pendingTrackRepository.saveDraft(operationId, current.draft)
+                .onSuccess {
+                    mutableState.update {
+                        it.copy(isSavingDraft = false, savedDraftOperationId = operationId)
+                    }
+                }
+                .onFailure {
+                    mutableState.update {
+                        it.copy(
+                            isSavingDraft = false,
+                            draftSaveError = "Impossible d’enregistrer le brouillon localement.",
+                        )
+                    }
+                }
         }
     }
 
     fun submit() {
         val current = state.value
-        if (current.isSubmitting || current.submissionResult.isComplete()) return
+        if (
+            current.isSubmitting || current.isSavingDraft ||
+            current.savedDraftOperationId != null || current.submissionResult.isComplete()
+        ) {
+            return
+        }
 
         viewModelScope.launch {
             mutableState.update { it.copy(isSubmitting = true, submissionResult = null) }

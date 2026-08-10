@@ -9,6 +9,7 @@ class QueueStateMachineTest {
     fun `only pending and failed operations can be claimed`() {
         assertTrue(QueueStateMachine.canClaim(QueueStatus.PENDING))
         assertTrue(QueueStateMachine.canClaim(QueueStatus.FAILED))
+        assertFalse(QueueStateMachine.canClaim(QueueStatus.DRAFT))
         assertFalse(QueueStateMachine.canClaim(QueueStatus.SENDING))
         assertFalse(QueueStateMachine.canClaim(QueueStatus.SENT))
     }

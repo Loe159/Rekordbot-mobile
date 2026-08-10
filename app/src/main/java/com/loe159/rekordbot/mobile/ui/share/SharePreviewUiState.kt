@@ -8,5 +8,8 @@ data class SharePreviewUiState(
     val isConfigurationLoading: Boolean = true,
     val isAirtableConfigured: Boolean = false,
     val isSubmitting: Boolean = false,
+    val isSavingDraft: Boolean = false,
+    val savedDraftOperationId: String? = null,
+    val draftSaveError: String? = null,
     val submissionResult: AirtableTrackSubmissionResult? = null,
 )

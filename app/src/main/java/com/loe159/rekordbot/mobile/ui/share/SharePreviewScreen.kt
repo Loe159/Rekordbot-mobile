@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableTrackSubmissionResult
 import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
+import com.loe159.rekordbot.mobile.ui.components.DjQualificationFields
 import com.loe159.rekordbot.mobile.ui.components.RekordbotStatusBadge
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotError
@@ -44,6 +46,7 @@ fun SharePreviewScreen(
     isInitialError: Boolean,
     isMetadataLoading: Boolean = false,
     onDraftChange: ((TrackDraft) -> TrackDraft) -> Unit,
+    onSaveDraft: () -> Unit,
     onSubmit: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -52,6 +55,7 @@ fun SharePreviewScreen(
     val isQueued = (state.submissionResult as? AirtableTrackSubmissionResult.Deferred)
         ?.isPersisted == true
     val isLocked = state.isSubmitting ||
+        state.isSavingDraft || state.savedDraftOperationId != null ||
         state.submissionResult is AirtableTrackSubmissionResult.Added || isQueued
 
     Scaffold(
@@ -81,10 +85,22 @@ fun SharePreviewScreen(
                 },
                 enabled = !isMetadataLoading && !isLocked,
             )
+            DjQualificationFields(
+                draft = draft,
+                onDraftChange = { changed -> onDraftChange { changed } },
+                enabled = !isLocked,
+            )
             initialMessage?.let {
                 ShareMessage(message = it, isError = isInitialError)
             }
             state.submissionResult?.let { SubmissionMessage(it) }
+            state.savedDraftOperationId?.let {
+                ShareMessage(
+                    message = "Brouillon enregistré dans la file. Tu pourras le modifier et l’envoyer plus tard.",
+                    isError = false,
+                )
+            }
+            state.draftSaveError?.let { ShareMessage(message = it, isError = true) }
             if (!state.isConfigurationLoading && !state.isAirtableConfigured) {
                 ShareMessage(
                     message = "Configure et teste Airtable depuis l’accueil avant l’envoi.",
@@ -102,6 +118,14 @@ fun SharePreviewScreen(
                 enabled = draft.isReadyForAirtable && state.isAirtableConfigured && !isLocked,
                 modifier = Modifier.fillMaxWidth(),
             )
+            OutlinedButton(
+                onClick = onSaveDraft,
+                enabled = !isLocked,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text(if (state.isSavingDraft) "Enregistrement…" else "Garder comme brouillon")
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
@@ -260,6 +284,7 @@ private fun SharePreviewScreenPreview() {
             initialMessage = null,
             isInitialError = false,
             onDraftChange = {},
+            onSaveDraft = {},
             onSubmit = {},
             onBack = {},
         )

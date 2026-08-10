@@ -131,12 +131,15 @@ private class FakePendingTrackRepository : PendingTrackRepository {
         enqueuedDraft = track
         return Result.success(operationId)
     }
+    override suspend fun saveDraft(operationId: String, track: TrackDraft): Result<String> =
+        Result.success(operationId)
     override suspend fun claimNext(): QueuedTrackOperation? = null
     override suspend fun markSent(operationId: String, recordId: String) = Unit
     override suspend fun markFailed(operationId: String, error: String, retryable: Boolean) = Unit
     override suspend fun retry(operationId: String): Boolean = false
     override suspend fun delete(operationId: String): Boolean = false
     override suspend fun updateDraft(operationId: String, draft: TrackDraft): Boolean = false
+    override suspend fun sendDraft(operationId: String): Boolean = false
     override suspend fun recoverInterrupted() = Unit
 }
 

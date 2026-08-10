@@ -15,6 +15,8 @@ interface PendingTrackRepository {
         initialError: String,
     ): Result<String>
 
+    suspend fun saveDraft(operationId: String, track: TrackDraft): Result<String>
+
     suspend fun claimNext(): QueuedTrackOperation?
 
     suspend fun markSent(operationId: String, recordId: String)
@@ -26,6 +28,8 @@ interface PendingTrackRepository {
     suspend fun delete(operationId: String): Boolean
 
     suspend fun updateDraft(operationId: String, draft: TrackDraft): Boolean
+
+    suspend fun sendDraft(operationId: String): Boolean
 
     suspend fun recoverInterrupted()
 }

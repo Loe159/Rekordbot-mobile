@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +38,11 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotError
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotMutedText
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
 import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.loe159.rekordbot.mobile.domain.model.TrackDraft
+import com.loe159.rekordbot.mobile.ui.components.DjQualificationFields
+import com.loe159.rekordbot.mobile.ui.theme.RekordbotWarning
 
 @Composable
 fun QueueRoute(
@@ -50,6 +58,11 @@ fun QueueRoute(
         state = state,
         onRetry = viewModel::retry,
         onDelete = viewModel::delete,
+        onEdit = viewModel::edit,
+        onSendDraft = viewModel::sendDraft,
+        onEditorDraftChange = viewModel::updateEditorDraft,
+        onSaveEditor = viewModel::saveEditor,
+        onDismissEditor = viewModel::dismissEditor,
         onBack = onBack,
     )
 }
@@ -59,6 +72,11 @@ fun QueueScreen(
     state: QueueUiState,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onSendDraft: (String) -> Unit,
+    onEditorDraftChange: (TrackDraft) -> Unit,
+    onSaveEditor: () -> Unit,
+    onDismissEditor: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -81,10 +99,19 @@ fun QueueScreen(
                 item { EmptyQueue() }
             }
             items(state.operations, key = QueuedTrackOperation::operationId) { operation ->
-                QueueCard(operation, onRetry, onDelete)
+                QueueCard(operation, onRetry, onDelete, onEdit, onSendDraft)
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
+    }
+
+    state.editor?.let { editor ->
+        QueueEditorDialog(
+            editor = editor,
+            onDraftChange = onEditorDraftChange,
+            onSave = onSaveEditor,
+            onDismiss = onDismissEditor,
+        )
     }
 }
 
@@ -131,6 +158,8 @@ private fun QueueCard(
     operation: QueuedTrackOperation,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onSendDraft: (String) -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -149,12 +178,12 @@ private fun QueueCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = operation.draft.title,
+                        text = operation.draft.title.ifBlank { "Titre à compléter" },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = operation.draft.artist,
+                        text = operation.draft.artist.ifBlank { "Artiste à compléter" },
                         style = MaterialTheme.typography.bodySmall,
                         color = RekordbotMutedText,
                     )
@@ -175,8 +204,22 @@ private fun QueueCard(
             operation.lastError?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = RekordbotError)
             }
-            if (operation.canRetry || operation.canDelete) {
+            QualificationSummary(operation.draft)
+            if (
+                operation.canRetry || operation.canDelete || operation.canEdit ||
+                operation.canSendDraft
+            ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (operation.canEdit) {
+                        TextButton(onClick = { onEdit(operation.operationId) }) {
+                            Text("Modifier")
+                        }
+                    }
+                    if (operation.canSendDraft) {
+                        TextButton(onClick = { onSendDraft(operation.operationId) }) {
+                            Text("Envoyer")
+                        }
+                    }
                     if (operation.canRetry) {
                         TextButton(onClick = { onRetry(operation.operationId) }) {
                             Text("Réessayer")
@@ -193,7 +236,104 @@ private fun QueueCard(
     }
 }
 
+@Composable
+private fun QualificationSummary(draft: TrackDraft) {
+    val tags = buildList {
+        draft.energy?.let { add("$it ★") }
+        addAll(draft.moods)
+        addAll(draft.situations)
+        addAll(draft.inspirationalDjs)
+    }
+    if (tags.isNotEmpty()) {
+        Text(
+            text = tags.joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = RekordbotPrimary,
+        )
+    }
+    draft.comment?.takeIf(String::isNotBlank)?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = RekordbotMutedText)
+    }
+}
+
+@Composable
+private fun QueueEditorDialog(
+    editor: QueueEditorState,
+    onDraftChange: (TrackDraft) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (editor.originalStatus == QueueStatus.DRAFT) {
+                    "Modifier le brouillon"
+                } else {
+                    "Modifier le morceau"
+                },
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                QueueEditorField("Titre", editor.draft.title) {
+                    onDraftChange(editor.draft.copy(title = it))
+                }
+                QueueEditorField("Artiste", editor.draft.artist) {
+                    onDraftChange(editor.draft.copy(artist = it))
+                }
+                QueueEditorField("Lien Spotify", editor.draft.spotifyUrl) {
+                    onDraftChange(editor.draft.copy(spotifyUrl = it))
+                }
+                QueueEditorField("Spotify Track ID", editor.draft.spotifyTrackId) {
+                    onDraftChange(editor.draft.copy(spotifyTrackId = it))
+                }
+                DjQualificationFields(
+                    draft = editor.draft,
+                    onDraftChange = onDraftChange,
+                    showContainer = false,
+                )
+                editor.error?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = RekordbotError)
+                }
+                if (!editor.canSave) {
+                    Text(
+                        "Complète les métadonnées obligatoires avant d’enregistrer.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = RekordbotWarning,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onSave, enabled = editor.canSave) { Text("Enregistrer") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+    )
+}
+
+@Composable
+private fun QueueEditorField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+    )
+}
+
 private fun QueueStatus.label(): String = when (this) {
+    QueueStatus.DRAFT -> "Brouillon"
     QueueStatus.PENDING -> "En attente"
     QueueStatus.SENDING -> "Envoi…"
     QueueStatus.SENT -> "Envoyé"

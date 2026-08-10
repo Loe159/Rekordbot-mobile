@@ -3,6 +3,7 @@ package com.loe159.rekordbot.mobile.domain.queue
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 
 enum class QueueStatus {
+    DRAFT,
     PENDING,
     SENDING,
     SENT,
@@ -29,7 +30,11 @@ data class QueuedTrackOperation(
         get() = status != QueueStatus.SENDING
 
     val canEdit: Boolean
-        get() = status == QueueStatus.PENDING || status == QueueStatus.FAILED
+        get() = status == QueueStatus.DRAFT ||
+            status == QueueStatus.PENDING || status == QueueStatus.FAILED
+
+    val canSendDraft: Boolean
+        get() = status == QueueStatus.DRAFT && draft.isReadyForAirtable
 }
 
 object QueueStateMachine {

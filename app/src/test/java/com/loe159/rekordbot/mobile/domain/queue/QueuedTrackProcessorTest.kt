@@ -85,6 +85,8 @@ private class ProcessorPendingRepository(
         track: TrackDraft,
         initialError: String,
     ): Result<String> = Result.success(operationId)
+    override suspend fun saveDraft(operationId: String, track: TrackDraft): Result<String> =
+        Result.success(operationId)
     override suspend fun claimNext(): QueuedTrackOperation? = next.also { next = null }
     override suspend fun markSent(operationId: String, recordId: String) {
         sent = operationId to recordId
@@ -95,6 +97,7 @@ private class ProcessorPendingRepository(
     override suspend fun retry(operationId: String): Boolean = true
     override suspend fun delete(operationId: String): Boolean = true
     override suspend fun updateDraft(operationId: String, draft: TrackDraft): Boolean = true
+    override suspend fun sendDraft(operationId: String): Boolean = true
     override suspend fun recoverInterrupted() = Unit
 }
 

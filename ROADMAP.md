@@ -102,9 +102,9 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Terminé quand** : aucun partage n’est perdu sans réseau et la file se vide automatiquement au retour de connexion.
 
-**Livré** : file Room persistante avec UUID stable, états et historique d’envoi, reprise automatique WorkManager sous contrainte réseau, récupération des opérations interrompues, vérification idempotente avant nouvelle tentative, compteur d’accueil et écran de suivi avec réessai/suppression. Le contrat de repository prévoit l’édition des opérations non envoyées pour P5.
+**Livré** : file Room persistante avec UUID stable, états et historique d’envoi, reprise automatique WorkManager sous contrainte réseau, récupération des opérations interrompues, vérification idempotente avant nouvelle tentative, compteur d’accueil et écran de suivi avec réessai/suppression. Le contrat de repository permet l’édition des opérations non envoyées.
 
-### P5 — Saisie DJ rapide
+### P5 — Saisie DJ rapide ✅
 
 - Ajouter une saisie facultative d’énergie, mood, situation, DJs inspirants et commentaire avant envoi ou depuis la file.
 - Utiliser les valeurs déjà employées dans Airtable, avec des raccourcis adaptés au téléphone et des tags colorés cohérents avec le design system.
@@ -112,6 +112,8 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 - Préparer l’extension de note vocale et sa transcription, sans la rendre bloquante pour le MVP.
 
 **Terminé quand** : le morceau peut être suffisamment contextualisé en quelques secondes, directement après l’écoute.
+
+**Livré** : énergie 1–5, moods colorés, situations, DJs inspirants et commentaire accessibles depuis l’aperçu et l’édition de la file. Les brouillons utilisent la même base Room que les envois, restent hors du traitement automatique jusqu’à l’action **Envoyer**, et peuvent rester incomplets. Airtable reçoit l’énergie comme nombre et les sélections multiples comme tableaux JSON. Les valeurs de qualification sont centralisées dans `DjQualificationOptions` pour suivre facilement la configuration Airtable ; le commentaire constitue le point d’extension non bloquant pour une future transcription vocale.
 
 ### P6 — Enrichissement des métadonnées
 
