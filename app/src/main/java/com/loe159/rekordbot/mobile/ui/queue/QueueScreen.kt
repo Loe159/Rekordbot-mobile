@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.loe159.rekordbot.mobile.domain.queue.QueueStatus
 import com.loe159.rekordbot.mobile.domain.queue.QueuedTrackOperation
@@ -43,6 +45,7 @@ import androidx.compose.foundation.verticalScroll
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.ui.components.DjQualificationFields
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotWarning
+import com.loe159.rekordbot.mobile.R
 
 @Composable
 fun QueueRoute(
@@ -95,6 +98,18 @@ fun QueueScreen(
                 QueueHeader(onBack)
                 Spacer(modifier = Modifier.height(8.dp))
             }
+            if (state.isLoading) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
             if (!state.isLoading && state.operations.isEmpty()) {
                 item { EmptyQueue() }
             }
@@ -124,10 +139,10 @@ private fun QueueHeader(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = onBack) { Text("‹ Retour") }
+        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         Column {
             Text(
-                text = "FILE D’ATTENTE",
+                text = stringResource(R.string.queue),
                 style = MaterialTheme.typography.labelLarge,
                 color = RekordbotPrimary,
                 fontWeight = FontWeight.Bold,

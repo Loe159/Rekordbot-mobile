@@ -15,6 +15,7 @@ import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
 import com.loe159.rekordbot.mobile.domain.queue.QueueOperationIdFactory
 import com.loe159.rekordbot.mobile.domain.queue.UuidQueueOperationIdFactory
+import com.loe159.rekordbot.mobile.ui.toUserFacingMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -97,9 +98,9 @@ class SharePreviewViewModel(
                     mutableState.update {
                         it.copy(
                             isSoundchartsEnriching = false,
-                            soundchartsMessage = error.message
-                                ?.let { message -> "Soundcharts : $message L’envoi reste disponible." }
-                                ?: "Enrichissement Soundcharts indisponible. L’envoi reste disponible.",
+                            soundchartsMessage = error.toUserFacingMessage(
+                                "Enrichissement Soundcharts indisponible. Vérifie le réseau ou désactive-le dans les réglages.",
+                            ) + " L’envoi reste disponible.",
                         )
                     }
                 }

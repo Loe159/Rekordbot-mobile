@@ -1,5 +1,6 @@
 package com.loe159.rekordbot.mobile.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,6 +61,14 @@ fun RekordbotApp(
 
     LaunchedEffect(Unit) {
         queueWorkScheduler.schedule()
+    }
+
+    BackHandler(enabled = incomingShare != null || showSettings || showQueue) {
+        when {
+            incomingShare != null -> onShareClosed()
+            showSettings -> showSettings = false
+            showQueue -> showQueue = false
+        }
     }
 
     RekordbotTheme {

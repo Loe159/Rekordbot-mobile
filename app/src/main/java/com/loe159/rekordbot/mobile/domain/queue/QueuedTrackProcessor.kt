@@ -43,7 +43,11 @@ class QueuedTrackProcessor(
                 val retryable = error !is AirtableApiException || error.isRetryable
                 pendingTrackRepository.markFailed(
                     operation.operationId,
-                    error.message ?: "Impossible de vérifier l’idempotence de l’envoi.",
+                    if (error is AirtableApiException) {
+                        error.message
+                    } else {
+                        "Impossible de vérifier l’envoi. Vérifie le réseau puis réessaie."
+                    },
                     retryable = retryable,
                 )
                 return if (!retryable) {

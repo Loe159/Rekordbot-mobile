@@ -18,7 +18,6 @@ sealed interface AirtableTrackSubmissionResult {
 
     data class Failed(val message: String) : AirtableTrackSubmissionResult
 
-    /** P4 will replace this transient state with a durable Room queue. */
     data class Deferred(
         val reason: String,
         val isPersisted: Boolean = false,
@@ -77,8 +76,11 @@ class SubmitTrackToAirtable(
         draft: TrackDraft,
         error: Throwable,
     ): AirtableTrackSubmissionResult {
-        val message = error.message?.takeIf(String::isNotBlank)
-            ?: "Impossible d’ajouter le morceau à Airtable."
+        val message = if (error is AirtableApiException) {
+            error.message
+        } else {
+            "Impossible de joindre Airtable. Vérifie le réseau puis réessaie."
+        }
         if (error !is AirtableApiException || !error.isRetryable) {
             return AirtableTrackSubmissionResult.Failed(message)
         }

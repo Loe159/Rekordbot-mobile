@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,12 +27,22 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Format, lint, test and build
-        run: ./gradlew formatCheck lintDebug testDebugUnitTest assembleDebug --stacktrace
+      - name: Format, lint, test and build debug/release
+        run: >-
+          ./gradlew formatCheck lintDebug lintRelease
+          testDebugUnitTest testReleaseUnitTest
+          assembleDebug assembleDebugAndroidTest assembleRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: rekordbot-mobile-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload unsigned release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekordbot-mobile-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error

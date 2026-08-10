@@ -142,13 +142,15 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : contrat versionné dans `docs/AIRTABLE_SYNC_CONTRACT.md`, ISRC optionnel persistant dans Room, mapping Airtable configurable et champs de retour PC distincts de `Statut`. Les valeurs par défaut suivent la table `Sons` et toute nouvelle ligne démarre avec `État RekordBot = À traiter`.
 
-### P8 — Finition et publication
+### P8 — Finition et publication ✅
 
 - Ajouter icône, nom, écran d’accueil et messages d’erreur soignés.
 - Vérifier le rendu du thème sombre et la lisibilité des actions bleues sur un appareil réel, y compris en extérieur.
 - Tester le flux complet sur Spotify Android et sur un réseau intermittent.
 - Produire un APK de test puis une release signée.
 - Rédiger un guide court de configuration Airtable et de dépannage.
+
+**Livré** : version 1.0.0, icônes adaptive/round/monochrome, splash Android, contraste des actions principales renforcé, accueil scrollable et retour système cohérent. Les erreurs inattendues ne révèlent plus leurs diagnostics bruts, les états chargement/action désactivée couvrent les parcours principaux et la CI valide lint, tests et assemblage en debug comme en release. La signature release est activée uniquement par un keystore externe stable, jamais commité ; la CI livre sinon un APK release explicitement non signé. Le guide `docs/RELEASE.md`, l’exemple de configuration et le changelog couvrent livraison et dépannage.
 
 ## Ordre recommandé
 

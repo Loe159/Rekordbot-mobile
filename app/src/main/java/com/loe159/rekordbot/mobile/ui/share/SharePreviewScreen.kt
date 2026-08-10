@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotSuccess
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotWarning
+import com.loe159.rekordbot.mobile.R
 
 @Composable
 fun SharePreviewScreen(
@@ -126,7 +128,7 @@ fun SharePreviewScreen(
                     state.submissionResult is AirtableTrackSubmissionResult.Added -> "Ajouté à Airtable"
                     isQueued -> "Conservé dans la file"
                     state.isSubmitting -> "Ajout en cours…"
-                    else -> "Ajouter à Airtable"
+                    else -> stringResource(R.string.add_to_airtable)
                 },
                 onClick = onSubmit,
                 enabled = draft.isReadyForAirtable && state.isAirtableConfigured && !isLocked,
@@ -138,7 +140,13 @@ fun SharePreviewScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
             ) {
-                Text(if (state.isSavingDraft) "Enregistrement…" else "Garder comme brouillon")
+                Text(
+                    if (state.isSavingDraft) {
+                        stringResource(R.string.saving)
+                    } else {
+                        stringResource(R.string.save_draft)
+                    },
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -152,7 +160,7 @@ private fun ShareHeader(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = onBack) { Text("‹ Retour") }
+        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
         Column {
             Text(
                 text = "PARTAGE SPOTIFY",

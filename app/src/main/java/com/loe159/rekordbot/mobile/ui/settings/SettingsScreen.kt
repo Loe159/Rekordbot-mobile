@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,6 +53,7 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotMutedText
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotSuccess
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
+import com.loe159.rekordbot.mobile.R
 
 @Composable
 fun SettingsRoute(
@@ -244,12 +246,14 @@ private fun SoundchartsSection(
             value = configuration.appId,
             onValueChange = onAppIdChange,
             isSecret = true,
+            enabled = !state.isSoundchartsBusy,
         )
         SettingsTextField(
             label = "Soundcharts API Key",
             value = configuration.apiKey,
             onValueChange = onApiKeyChange,
             isSecret = true,
+            enabled = !state.isSoundchartsBusy,
         )
         state.soundchartsMessage?.let {
             SettingsMessage(it, state.isSoundchartsError)
@@ -304,11 +308,11 @@ private fun SettingsHeader(onBack: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TextButton(onClick = onBack) {
-            Text("‹ Retour")
+            Text(stringResource(R.string.back))
         }
         Column {
             Text(
-                text = "RÉGLAGES",
+                text = stringResource(R.string.settings),
                 style = MaterialTheme.typography.labelLarge,
                 color = RekordbotPrimary,
                 fontWeight = FontWeight.Bold,
@@ -494,6 +498,7 @@ private fun SettingsTextField(
     onValueChange: (String) -> Unit,
     supportingText: String? = null,
     isSecret: Boolean = false,
+    enabled: Boolean = true,
 ) {
     OutlinedTextField(
         value = value,
@@ -503,6 +508,7 @@ private fun SettingsTextField(
         supportingText = supportingText?.let { text -> { Text(text) } },
         visualTransformation = if (isSecret) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         singleLine = true,
+        enabled = enabled,
         shape = MaterialTheme.shapes.medium,
     )
 }

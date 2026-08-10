@@ -135,7 +135,7 @@ class DirectAirtableGateway(
                 .orEmpty()
             if (statusCode !in 200..299) {
                 throw AirtableApiException(
-                    message = readableError(statusCode, responseBody),
+                    message = readableError(statusCode),
                     statusCode = statusCode,
                 )
             }
@@ -181,16 +181,8 @@ class DirectAirtableGateway(
         throw AirtableApiException("Table « $configuredTable » introuvable dans cette base.")
     }
 
-    private fun readableError(statusCode: Int, responseBody: String): String {
-        val airtableDetail = runCatching {
-            val error = JSONObject(responseBody).opt("error")
-            when (error) {
-                is JSONObject -> error.optString("message").ifBlank { error.optString("type") }
-                is String -> error
-                else -> ""
-            }
-        }.getOrDefault("")
-
+    private fun readableError(statusCode: Int): String {
+        // Never surface the provider body: it can contain implementation details or identifiers.
         return when (statusCode) {
             HttpURLConnection.HTTP_UNAUTHORIZED ->
                 "Token Airtable invalide ou révoqué."
@@ -198,11 +190,9 @@ class DirectAirtableGateway(
                 "Accès refusé. Vérifie l’accès du token à la base et les droits schema.bases:read / data.records:read / data.records:write."
             HttpURLConnection.HTTP_NOT_FOUND ->
                 "Base Airtable introuvable ou inaccessible. Vérifie le Base ID et les ressources du token."
-            422 -> airtableDetail.ifBlank {
-                "Airtable refuse la configuration. Vérifie les noms et les types des champs."
-            }
+            422 -> "Airtable refuse la configuration. Vérifie les noms et les types des champs."
             429 -> "Trop de requêtes envoyées à Airtable. Réessaie dans quelques secondes."
-            else -> airtableDetail.ifBlank { "Erreur Airtable HTTP $statusCode." }
+            else -> "Airtable est indisponible (HTTP $statusCode). Réessaie plus tard."
         }
     }
 

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -23,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
 import com.loe159.rekordbot.mobile.ui.components.RekordbotStatusBadge
@@ -30,6 +34,7 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotMutedText
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
+import com.loe159.rekordbot.mobile.R
 
 @Composable
 fun HomeRoute(
@@ -63,6 +68,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
@@ -82,18 +88,18 @@ fun HomeScreen(
 private fun Header() {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "REKORDBOT",
+            text = stringResource(R.string.brand_name),
             color = RekordbotPrimary,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Prépare tes morceaux partout.",
+            text = stringResource(R.string.home_headline),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            text = "Partage un morceau depuis Spotify pour vérifier ses métadonnées avant l’envoi Airtable.",
+            text = stringResource(R.string.home_description),
             style = MaterialTheme.typography.bodyMedium,
             color = RekordbotMutedText,
         )
@@ -124,37 +130,45 @@ private fun FoundationCard(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Connexion Airtable",
+                        text = stringResource(R.string.airtable_connection),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "$pendingTracks morceau en attente",
+                        text = pluralStringResource(
+                            R.plurals.pending_tracks,
+                            pendingTracks,
+                            pendingTracks,
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = RekordbotMutedText,
                     )
                 }
                 RekordbotStatusBadge(
-                    label = if (isAirtableConfigured) "Connecté" else "À configurer",
+                    label = if (isAirtableConfigured) {
+                        stringResource(R.string.connected)
+                    } else {
+                        stringResource(R.string.to_configure)
+                    },
                     isPositive = isAirtableConfigured,
                 )
             }
 
             RekordbotPrimaryButton(
-                label = "File d’attente · $pendingTracks",
+                label = stringResource(R.string.queue_with_count, pendingTracks),
                 onClick = onOpenQueue,
                 modifier = Modifier.fillMaxWidth(),
             )
             RekordbotPrimaryButton(
-                label = "Configurer Airtable",
+                label = stringResource(R.string.configure_airtable),
                 onClick = onConfigureAirtable,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
                 text = if (isAirtableConfigured) {
-                    "La connexion a été validée. Tu peux modifier ou retester les réglages."
+                    stringResource(R.string.airtable_configured_hint)
                 } else {
-                    "Ajoute ton token, ta base, ta table et les noms de champs."
+                    stringResource(R.string.airtable_setup_hint)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = RekordbotMutedText,
@@ -167,14 +181,26 @@ private fun FoundationCard(
 private fun WorkflowOverview() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "FLUX CIBLE",
+            text = stringResource(R.string.how_it_works),
             style = MaterialTheme.typography.labelLarge,
             color = RekordbotMutedText,
             fontWeight = FontWeight.Bold,
         )
-        WorkflowStep(index = "01", title = "Spotify", description = "Partager et vérifier le morceau")
-        WorkflowStep(index = "02", title = "Airtable", description = "Envoi direct et doublons contrôlés")
-        WorkflowStep(index = "03", title = "Rekordbot PC", description = "Synchroniser vers Rekordbox")
+        WorkflowStep(
+            index = "01",
+            title = stringResource(R.string.spotify),
+            description = stringResource(R.string.workflow_share),
+        )
+        WorkflowStep(
+            index = "02",
+            title = stringResource(R.string.airtable),
+            description = stringResource(R.string.workflow_airtable),
+        )
+        WorkflowStep(
+            index = "03",
+            title = stringResource(R.string.rekordbot_pc),
+            description = stringResource(R.string.workflow_pc),
+        )
     }
 }
 

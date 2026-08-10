@@ -1,4 +1,30 @@
 <resources>
     <string name="app_name">Rekordbot</string>
+    <string name="brand_name">REKORDBOT</string>
+    <string name="home_headline">Prépare tes morceaux partout.</string>
+    <string name="home_description">Partage un morceau depuis Spotify pour vérifier ses métadonnées avant l’envoi Airtable.</string>
+    <string name="airtable_connection">Connexion Airtable</string>
+    <plurals name="pending_tracks">
+        <item quantity="one">%1$d morceau en attente</item>
+        <item quantity="other">%1$d morceaux en attente</item>
+    </plurals>
+    <string name="connected">Connecté</string>
+    <string name="to_configure">À configurer</string>
+    <string name="queue_with_count">File d’attente · %1$d</string>
+    <string name="configure_airtable">Configurer Airtable</string>
+    <string name="airtable_configured_hint">La connexion a été validée. Tu peux modifier ou retester les réglages.</string>
+    <string name="airtable_setup_hint">Ajoute ton token, ta base, ta table et les noms de champs.</string>
+    <string name="how_it_works">COMMENT ÇA MARCHE</string>
+    <string name="spotify">Spotify</string>
+    <string name="airtable">Airtable</string>
+    <string name="rekordbot_pc">Rekordbot PC</string>
+    <string name="workflow_share">Partager et vérifier le morceau</string>
+    <string name="workflow_airtable">Envoi direct et doublons contrôlés</string>
+    <string name="workflow_pc">Synchroniser vers Rekordbox</string>
+    <string name="back">‹ Retour</string>
+    <string name="add_to_airtable">Ajouter à Airtable</string>
+    <string name="save_draft">Garder comme brouillon</string>
+    <string name="saving">Enregistrement…</string>
+    <string name="settings">RÉGLAGES</string>
+    <string name="queue">FILE D’ATTENTE</string>
 </resources>
-

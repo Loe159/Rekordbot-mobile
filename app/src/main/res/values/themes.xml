@@ -1,5 +1,11 @@
 <resources>
-    <style name="Theme.RekordbotMobile" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.RekordbotMobile" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#111318</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.RekordbotMobile.Content</item>
+    </style>
+
+    <style name="Theme.RekordbotMobile.Content" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowLightStatusBar">false</item>
@@ -8,4 +14,3 @@
         <item name="android:windowBackground">#111318</item>
     </style>
 </resources>
-

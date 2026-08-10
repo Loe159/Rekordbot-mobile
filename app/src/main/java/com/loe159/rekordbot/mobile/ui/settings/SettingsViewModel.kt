@@ -11,6 +11,7 @@ import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationReposi
 import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
+import com.loe159.rekordbot.mobile.ui.toUserFacingMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -143,7 +144,9 @@ class SettingsViewModel(
                 }
                 .onFailure { error ->
                     showSoundchartsFailure(
-                        error.message ?: "Connexion Soundcharts impossible.",
+                        error.toUserFacingMessage(
+                            "Connexion Soundcharts impossible. Vérifie les identifiants et le réseau.",
+                        ),
                     )
                 }
         }
@@ -271,7 +274,7 @@ class SettingsViewModel(
             it.copy(
                 isBusy = false,
                 isConnectionValidated = false,
-                message = error.message?.takeIf(String::isNotBlank) ?: fallbackMessage,
+                message = error.toUserFacingMessage(fallbackMessage),
                 isError = true,
             )
         }

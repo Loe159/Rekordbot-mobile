@@ -2,6 +2,8 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
+Version actuelle : **1.0.0**.
+
 > Le contrat P7 de synchronisation Mobile ↔ Airtable ↔ PC est documenté et versionné. Voir [docs/AIRTABLE_SYNC_CONTRACT.md](docs/AIRTABLE_SYNC_CONTRACT.md).
 
 ## Stack
@@ -80,11 +82,13 @@ L’APK est généré dans `app/build/outputs/apk/debug/`.
 ## Qualité
 
 ```bash
-./gradlew formatCheck lintDebug testDebugUnitTest assembleDebug
+./gradlew formatCheck lintDebug lintRelease testDebugUnitTest testReleaseUnitTest assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
-La CI exécute les mêmes contrôles à chaque push et pull request.
+La CI exécute les mêmes contrôles à chaque push et pull request, puis publie les APK debug et release non signé comme artefacts. La procédure de signature stable, de livraison et le dépannage sont détaillés dans [docs/RELEASE.md](docs/RELEASE.md). Les changements de la version sont listés dans [CHANGELOG.md](CHANGELOG.md).
 
 ## Configuration locale
 
 Ne jamais commiter de token Airtable, d’identifiants Soundcharts ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés.
+
+Pour signer une release, copier `keystore.properties.example` vers `keystore.properties` et renseigner une clé durable, ou fournir les quatre variables `REKORDBOT_STORE_*` / `REKORDBOT_KEY_*` documentées. Sans configuration, le build release reste volontairement non signé.
