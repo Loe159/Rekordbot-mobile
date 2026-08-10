@@ -7,6 +7,9 @@ import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.queue.QueueOperationIdFactory
+import com.loe159.rekordbot.mobile.domain.queue.UuidQueueOperationIdFactory
+import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
 
 sealed interface AirtableTrackSubmissionResult {
     data class Added(val recordId: String) : AirtableTrackSubmissionResult
@@ -19,12 +22,15 @@ sealed interface AirtableTrackSubmissionResult {
     data class Deferred(
         val reason: String,
         val isPersisted: Boolean = false,
+        val operationId: String? = null,
     ) : AirtableTrackSubmissionResult
 }
 
 class SubmitTrackToAirtable(
     private val configurationRepository: AirtableConfigurationRepository,
     private val airtableGateway: AirtableGateway,
+    private val pendingTrackRepository: PendingTrackRepository? = null,
+    private val operationIdFactory: QueueOperationIdFactory = UuidQueueOperationIdFactory,
 ) {
     suspend operator fun invoke(draft: TrackDraft): AirtableTrackSubmissionResult {
         if (!draft.isReadyForAirtable) {
@@ -57,26 +63,41 @@ class SubmitTrackToAirtable(
                             return AirtableTrackSubmissionResult.DuplicateBlocked(existingRecordId)
                         }
                     },
-                    onFailure = { return it.toSubmissionFailure() },
+                    onFailure = { return deferOrFail(draft, it) },
                 )
         }
 
         return airtableGateway.createTrackRecord(configuration, draft).fold(
             onSuccess = { AirtableTrackSubmissionResult.Added(it) },
-            onFailure = { it.toSubmissionFailure() },
+            onFailure = { deferOrFail(draft, it) },
         )
     }
 
-    private fun Throwable.toSubmissionFailure(): AirtableTrackSubmissionResult =
-        if (this is AirtableApiException && isRetryable) {
-            AirtableTrackSubmissionResult.Deferred(
-                reason = message,
-                isPersisted = false,
-            )
-        } else {
-            AirtableTrackSubmissionResult.Failed(
-                message = message?.takeIf(String::isNotBlank)
-                    ?: "Impossible d’ajouter le morceau à Airtable.",
-            )
+    private suspend fun deferOrFail(
+        draft: TrackDraft,
+        error: Throwable,
+    ): AirtableTrackSubmissionResult {
+        val message = error.message?.takeIf(String::isNotBlank)
+            ?: "Impossible d’ajouter le morceau à Airtable."
+        if (error !is AirtableApiException || !error.isRetryable) {
+            return AirtableTrackSubmissionResult.Failed(message)
         }
+        val repository = pendingTrackRepository
+            ?: return AirtableTrackSubmissionResult.Deferred(reason = message)
+        val operationId = operationIdFactory.create()
+        return repository.enqueue(operationId, draft, message).fold(
+            onSuccess = {
+                AirtableTrackSubmissionResult.Deferred(
+                    reason = message,
+                    isPersisted = true,
+                    operationId = operationId,
+                )
+            },
+            onFailure = {
+                AirtableTrackSubmissionResult.Failed(
+                    "L’envoi a échoué et n’a pas pu être conservé localement.",
+                )
+            },
+        )
+    }
 }

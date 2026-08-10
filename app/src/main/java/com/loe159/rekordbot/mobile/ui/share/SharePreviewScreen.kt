@@ -49,7 +49,10 @@ fun SharePreviewScreen(
     modifier: Modifier = Modifier,
 ) {
     val draft = state.draft
-    val isLocked = state.isSubmitting || state.submissionResult is AirtableTrackSubmissionResult.Added
+    val isQueued = (state.submissionResult as? AirtableTrackSubmissionResult.Deferred)
+        ?.isPersisted == true
+    val isLocked = state.isSubmitting ||
+        state.submissionResult is AirtableTrackSubmissionResult.Added || isQueued
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -91,6 +94,7 @@ fun SharePreviewScreen(
             RekordbotPrimaryButton(
                 label = when {
                     state.submissionResult is AirtableTrackSubmissionResult.Added -> "Ajouté à Airtable"
+                    isQueued -> "Conservé dans la file"
                     state.isSubmitting -> "Ajout en cours…"
                     else -> "Ajouter à Airtable"
                 },
@@ -98,13 +102,6 @@ fun SharePreviewScreen(
                 enabled = draft.isReadyForAirtable && state.isAirtableConfigured && !isLocked,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (state.submissionResult is AirtableTrackSubmissionResult.Deferred) {
-                Text(
-                    text = "P4 ajoutera la file hors-ligne persistante. Pour l’instant, réessaie avant de fermer cet écran.",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = RekordbotMutedText,
-                )
-            }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
@@ -224,7 +221,11 @@ private fun SubmissionMessage(result: AirtableTrackSubmissionResult) {
             "Doublon bloqué : ce Track ID existe déjà · ${result.recordId}" to RekordbotWarning
         is AirtableTrackSubmissionResult.Failed -> result.message to RekordbotError
         is AirtableTrackSubmissionResult.Deferred ->
-            "Envoi différé — non enregistré localement. ${result.reason}" to RekordbotWarning
+            if (result.isPersisted) {
+                "Réseau indisponible : morceau conservé dans la file. L’envoi reprendra automatiquement." to RekordbotWarning
+            } else {
+                "Envoi différé — non enregistré localement. ${result.reason}" to RekordbotWarning
+            }
     }
     Surface(
         modifier = Modifier.fillMaxWidth(),

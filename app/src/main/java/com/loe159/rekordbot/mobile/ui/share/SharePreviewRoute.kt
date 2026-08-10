@@ -8,6 +8,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
+import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyMetadataGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
 
@@ -17,6 +19,8 @@ fun SharePreviewRoute(
     metadataGateway: SpotifyMetadataGateway,
     configurationRepository: AirtableConfigurationRepository,
     airtableGateway: AirtableGateway,
+    pendingTrackRepository: PendingTrackRepository,
+    queueWorkScheduler: QueueWorkScheduler,
     onBack: () -> Unit,
 ) {
     val needsMetadata = parseResult.draft.spotifyTrackId.isNotBlank() &&
@@ -43,6 +47,8 @@ fun SharePreviewRoute(
             initialDraft = parseResult.draft,
             configurationRepository = configurationRepository,
             airtableGateway = airtableGateway,
+            pendingTrackRepository = pendingTrackRepository,
+            queueWorkScheduler = queueWorkScheduler,
         ),
     )
     val state by viewModel.state.collectAsState()

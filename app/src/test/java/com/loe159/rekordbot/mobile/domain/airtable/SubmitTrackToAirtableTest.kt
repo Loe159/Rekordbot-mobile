@@ -7,6 +7,11 @@ import com.loe159.rekordbot.mobile.domain.model.AirtableTableSchema
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
+import com.loe159.rekordbot.mobile.domain.queue.QueuedTrackOperation
+import com.loe159.rekordbot.mobile.domain.queue.QueueOperationIdFactory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +73,27 @@ class SubmitTrackToAirtableTest {
     }
 
     @Test
+    fun `network failure is persisted with stable operation id when queue is available`() = runBlocking {
+        val queue = FakePendingTrackRepository()
+        val gateway = FakeAirtableGateway(
+            createResult = Result.failure(AirtableApiException("Réseau indisponible")),
+        )
+        val useCase = SubmitTrackToAirtable(
+            FakeConfigurationRepository(configuration()),
+            gateway,
+            queue,
+            QueueOperationIdFactory { "operation-stable" },
+        )
+
+        val result = useCase(draft) as AirtableTrackSubmissionResult.Deferred
+
+        assertTrue(result.isPersisted)
+        assertEquals("operation-stable", result.operationId)
+        assertEquals("operation-stable", queue.enqueuedOperationId)
+        assertEquals(draft, queue.enqueuedDraft)
+    }
+
+    @Test
     fun `non retryable Airtable failure is detailed`() = runBlocking {
         val gateway = FakeAirtableGateway(
             createResult = Result.failure(AirtableApiException("Champ invalide", 422)),
@@ -88,6 +114,30 @@ class SubmitTrackToAirtableTest {
         table = "Tracks",
         duplicateStrategy = duplicateStrategy,
     )
+}
+
+private class FakePendingTrackRepository : PendingTrackRepository {
+    var enqueuedOperationId: String? = null
+    var enqueuedDraft: TrackDraft? = null
+
+    override fun observeAll(): Flow<List<QueuedTrackOperation>> = flowOf(emptyList())
+    override fun observeOpenCount(): Flow<Int> = flowOf(0)
+    override suspend fun enqueue(
+        operationId: String,
+        track: TrackDraft,
+        initialError: String,
+    ): Result<String> {
+        enqueuedOperationId = operationId
+        enqueuedDraft = track
+        return Result.success(operationId)
+    }
+    override suspend fun claimNext(): QueuedTrackOperation? = null
+    override suspend fun markSent(operationId: String, recordId: String) = Unit
+    override suspend fun markFailed(operationId: String, error: String, retryable: Boolean) = Unit
+    override suspend fun retry(operationId: String): Boolean = false
+    override suspend fun delete(operationId: String): Boolean = false
+    override suspend fun updateDraft(operationId: String, draft: TrackDraft): Boolean = false
+    override suspend fun recoverInterrupted() = Unit
 }
 
 private class FakeConfigurationRepository(

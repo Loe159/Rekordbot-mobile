@@ -93,7 +93,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : création directe avec mapping configurable, détection par Spotify Track ID, stratégie bloquer/autoriser et états ajouté/échec/différé. L’état différé de P3 est explicitement non persistant ; la persistance démarre en P4.
 
-### P4 — Mode hors-ligne fiable
+### P4 — Mode hors-ligne fiable ✅
 
 - Mettre les ajouts en attente dans une base locale Room si Airtable ou le réseau est indisponible.
 - Relancer l’envoi automatiquement avec WorkManager.
@@ -101,6 +101,8 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 - Garantir l’idempotence : une même opération ne doit pas créer plusieurs morceaux après plusieurs tentatives.
 
 **Terminé quand** : aucun partage n’est perdu sans réseau et la file se vide automatiquement au retour de connexion.
+
+**Livré** : file Room persistante avec UUID stable, états et historique d’envoi, reprise automatique WorkManager sous contrainte réseau, récupération des opérations interrompues, vérification idempotente avant nouvelle tentative, compteur d’accueil et écran de suivi avec réessai/suppression. Le contrat de repository prévoit l’édition des opérations non envoyées pour P5.
 
 ### P5 — Saisie DJ rapide
 

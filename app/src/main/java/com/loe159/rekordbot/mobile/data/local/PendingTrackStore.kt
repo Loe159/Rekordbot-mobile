@@ -1,12 +1,11 @@
 package com.loe159.rekordbot.mobile.data.local
 
-import com.loe159.rekordbot.mobile.domain.model.TrackDraft
+import com.loe159.rekordbot.mobile.domain.queue.QueuedTrackOperation
 import kotlinx.coroutines.flow.Flow
 
-/** Local persistence boundary. Room will implement it during P4. */
+/** Persistence boundary implemented by Room. */
 interface PendingTrackStore {
-    fun observeAll(): Flow<List<TrackDraft>>
+    fun observeAll(): Flow<List<QueuedTrackOperation>>
 
-    suspend fun save(track: TrackDraft)
+    fun observeOpenCount(): Flow<Int>
 }
-

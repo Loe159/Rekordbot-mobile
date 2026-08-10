@@ -34,11 +34,17 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 @Composable
 fun HomeRoute(
     isAirtableConfigured: Boolean,
+    pendingTracks: Int,
     onConfigureAirtable: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     HomeScreen(
-        state = HomeUiState(isAirtableConfigured = isAirtableConfigured),
+        state = HomeUiState(
+            isAirtableConfigured = isAirtableConfigured,
+            pendingTracks = pendingTracks,
+        ),
         onConfigureAirtable = onConfigureAirtable,
+        onOpenQueue = onOpenQueue,
     )
 }
 
@@ -46,6 +52,7 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onConfigureAirtable: () -> Unit,
+    onOpenQueue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -64,6 +71,7 @@ fun HomeScreen(
                 isAirtableConfigured = state.isAirtableConfigured,
                 pendingTracks = state.pendingTracks,
                 onConfigureAirtable = onConfigureAirtable,
+                onOpenQueue = onOpenQueue,
             )
             WorkflowOverview()
         }
@@ -97,6 +105,7 @@ private fun FoundationCard(
     isAirtableConfigured: Boolean,
     pendingTracks: Int,
     onConfigureAirtable: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -131,6 +140,11 @@ private fun FoundationCard(
                 )
             }
 
+            RekordbotPrimaryButton(
+                label = "File d’attente · $pendingTracks",
+                onClick = onOpenQueue,
+                modifier = Modifier.fillMaxWidth(),
+            )
             RekordbotPrimaryButton(
                 label = "Configurer Airtable",
                 onClick = onConfigureAirtable,
@@ -217,6 +231,7 @@ private fun HomeScreenPreview() {
         HomeScreen(
             state = HomeUiState(),
             onConfigureAirtable = {},
+            onOpenQueue = {},
         )
     }
 }

@@ -8,6 +8,8 @@ import com.loe159.rekordbot.mobile.domain.airtable.AirtableTrackSubmissionResult
 import com.loe159.rekordbot.mobile.domain.airtable.SubmitTrackToAirtable
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
+import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +20,14 @@ class SharePreviewViewModel(
     initialDraft: TrackDraft,
     private val configurationRepository: AirtableConfigurationRepository,
     airtableGateway: AirtableGateway,
+    pendingTrackRepository: PendingTrackRepository,
+    private val queueWorkScheduler: QueueWorkScheduler,
 ) : ViewModel() {
-    private val submitTrack = SubmitTrackToAirtable(configurationRepository, airtableGateway)
+    private val submitTrack = SubmitTrackToAirtable(
+        configurationRepository,
+        airtableGateway,
+        pendingTrackRepository,
+    )
     private val mutableState = MutableStateFlow(SharePreviewUiState(draft = initialDraft))
     val state: StateFlow<SharePreviewUiState> = mutableState.asStateFlow()
 
@@ -38,7 +46,7 @@ class SharePreviewViewModel(
 
     fun applyEnrichedDraft(enrichedDraft: TrackDraft) {
         mutableState.update { current ->
-            if (current.submissionResult is AirtableTrackSubmissionResult.Added) return@update current
+            if (current.submissionResult.isComplete()) return@update current
             current.copy(
                 draft = current.draft.copy(
                     title = current.draft.title.ifBlank { enrichedDraft.title },
@@ -54,7 +62,7 @@ class SharePreviewViewModel(
 
     fun updateDraft(transform: (TrackDraft) -> TrackDraft) {
         mutableState.update { current ->
-            if (current.isSubmitting || current.submissionResult is AirtableTrackSubmissionResult.Added) {
+            if (current.isSubmitting || current.submissionResult.isComplete()) {
                 current
             } else {
                 current.copy(draft = transform(current.draft), submissionResult = null)
@@ -64,11 +72,14 @@ class SharePreviewViewModel(
 
     fun submit() {
         val current = state.value
-        if (current.isSubmitting || current.submissionResult is AirtableTrackSubmissionResult.Added) return
+        if (current.isSubmitting || current.submissionResult.isComplete()) return
 
         viewModelScope.launch {
             mutableState.update { it.copy(isSubmitting = true, submissionResult = null) }
             val result = submitTrack(current.draft)
+            if (result is AirtableTrackSubmissionResult.Deferred && result.isPersisted) {
+                queueWorkScheduler.schedule()
+            }
             mutableState.update {
                 it.copy(
                     isSubmitting = false,
@@ -85,13 +96,21 @@ class SharePreviewViewModel(
             initialDraft: TrackDraft,
             configurationRepository: AirtableConfigurationRepository,
             airtableGateway: AirtableGateway,
+            pendingTrackRepository: PendingTrackRepository,
+            queueWorkScheduler: QueueWorkScheduler,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = SharePreviewViewModel(
                 initialDraft = initialDraft,
                 configurationRepository = configurationRepository,
                 airtableGateway = airtableGateway,
+                pendingTrackRepository = pendingTrackRepository,
+                queueWorkScheduler = queueWorkScheduler,
             ) as T
         }
     }
 }
+
+private fun AirtableTrackSubmissionResult?.isComplete(): Boolean =
+    this is AirtableTrackSubmissionResult.Added ||
+        (this is AirtableTrackSubmissionResult.Deferred && isPersisted)
