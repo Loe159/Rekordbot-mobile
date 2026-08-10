@@ -11,12 +11,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesAirtableConfigurationRepository
 import com.loe159.rekordbot.mobile.data.remote.airtable.DirectAirtableGateway
+import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
 import com.loe159.rekordbot.mobile.ui.home.HomeRoute
+import com.loe159.rekordbot.mobile.ui.share.SharePreviewRoute
 import com.loe159.rekordbot.mobile.ui.settings.SettingsRoute
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 
 @Composable
-fun RekordbotApp() {
+fun RekordbotApp(
+    incomingShare: SpotifyShareParseResult? = null,
+    onShareClosed: () -> Unit = {},
+) {
     val context = LocalContext.current
     val configurationRepository = remember {
         SharedPreferencesAirtableConfigurationRepository(context.applicationContext)
@@ -32,7 +37,12 @@ fun RekordbotApp() {
     }
 
     RekordbotTheme {
-        if (showSettings) {
+        if (incomingShare != null) {
+            SharePreviewRoute(
+                parseResult = incomingShare,
+                onBack = onShareClosed,
+            )
+        } else if (showSettings) {
             SettingsRoute(
                 configurationRepository = configurationRepository,
                 airtableGateway = airtableGateway,
