@@ -10,7 +10,9 @@ object AirtableConfigurationValidator {
         if (configuration.fields.spotifyUrl.isBlank()) add("Le champ Lien Spotify est obligatoire.")
         if (configuration.fields.spotifyTrackId.isBlank()) add("Le champ Spotify Track ID est obligatoire.")
         if (configuration.fields.status.isBlank()) add("Le champ Statut est obligatoire.")
+        if (configuration.fields.rekordbotState.isBlank()) add("Le champ État RekordBot est obligatoire.")
         if (configuration.defaultStatus.isBlank()) add("Le statut par défaut est obligatoire.")
+        if (configuration.defaultRekordbotState.isBlank()) add("État RekordBot initial obligatoire.")
     }
 
     fun schemaErrors(

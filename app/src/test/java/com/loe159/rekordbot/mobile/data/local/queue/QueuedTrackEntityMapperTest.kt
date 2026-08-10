@@ -14,6 +14,7 @@ class QueuedTrackEntityMapperTest {
             title = "Open Eye Signal",
             artist = "Jon Hopkins",
             spotifyUrl = "https://open.spotify.com/track/spotify-id",
+            isrc = "GB-CEL-21-00001",
             rawGenre = "Electronic",
             energy = 5,
             moods = listOf("Énergique", "Joyeux"),

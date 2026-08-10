@@ -293,6 +293,9 @@ private fun QueueEditorDialog(
                 QueueEditorField("Spotify Track ID", editor.draft.spotifyTrackId) {
                     onDraftChange(editor.draft.copy(spotifyTrackId = it))
                 }
+                QueueEditorField("ISRC (optionnel)", editor.draft.isrc.orEmpty()) {
+                    onDraftChange(editor.draft.copy(isrc = it.ifBlank { null }))
+                }
                 DjQualificationFields(
                     draft = editor.draft,
                     onDraftChange = onDraftChange,

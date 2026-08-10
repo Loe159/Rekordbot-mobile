@@ -13,6 +13,8 @@ object AirtableRecordMapper {
         put(configuration.fields.spotifyUrl, track.spotifyUrl.trim())
         put(configuration.fields.spotifyTrackId, track.spotifyTrackId.trim())
         put(configuration.fields.status, configuration.defaultStatus.trim())
+        putIfConfigured(configuration.fields.isrc, track.isrc)
+        putIfConfigured(configuration.fields.rekordbotState, configuration.defaultRekordbotState)
         putIfConfigured(configuration.fields.source, configuration.defaultSource)
         putIfConfigured(configuration.fields.rawGenre, track.rawGenre)
         putNumberIfConfigured(configuration.fields.energy, track.energy)

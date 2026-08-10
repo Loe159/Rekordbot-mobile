@@ -76,6 +76,7 @@ fun SharePreviewScreen(
                 artist = draft.artist,
                 spotifyUrl = draft.spotifyUrl,
                 trackId = draft.spotifyTrackId,
+                isrc = draft.isrc.orEmpty(),
                 isComplete = draft.isReadyForAirtable,
                 onTitleChange = { value -> onDraftChange { it.copy(title = value) } },
                 onArtistChange = { value -> onDraftChange { it.copy(artist = value) } },
@@ -83,6 +84,7 @@ fun SharePreviewScreen(
                 onTrackIdChange = { value ->
                     onDraftChange { it.copy(spotifyTrackId = value) }
                 },
+                onIsrcChange = { value -> onDraftChange { it.copy(isrc = value.ifBlank { null }) } },
                 enabled = !isMetadataLoading && !isLocked,
             )
             DjQualificationFields(
@@ -160,11 +162,13 @@ private fun PreviewCard(
     artist: String,
     spotifyUrl: String,
     trackId: String,
+    isrc: String,
     isComplete: Boolean,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSpotifyUrlChange: (String) -> Unit,
     onTrackIdChange: (String) -> Unit,
+    onIsrcChange: (String) -> Unit,
     enabled: Boolean,
 ) {
     Surface(
@@ -196,6 +200,7 @@ private fun PreviewCard(
             PreviewTextField("Artiste", artist, onArtistChange, enabled)
             PreviewTextField("Lien Spotify", spotifyUrl, onSpotifyUrlChange, enabled)
             PreviewTextField("Spotify Track ID", trackId, onTrackIdChange, enabled)
+            PreviewTextField("ISRC (optionnel)", isrc, onIsrcChange, enabled)
         }
     }
 }

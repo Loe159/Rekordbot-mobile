@@ -18,7 +18,7 @@ L’application ne dépend ni du PC ni d’une API intermédiaire : elle appelle
 - Le token et la configuration Airtable restent uniquement sur le téléphone, dans le stockage sécurisé Android ; aucun secret ne doit être commité.
 - Aucune récupération ou téléchargement automatique de musique depuis Spotify ou YouTube.
 - Le genre Soundcharts reste une valeur brute dans un champ Airtable texte libre, sans mapping vers une liste fermée.
-- L’échange avec le Rekordbot PC passe uniquement par Airtable. La première intégration Rekordbox reste l’export XML ; l’écriture directe de la base Rekordbox n’est pas dans ce périmètre.
+- L’échange avec RekordBot PC passe uniquement par Airtable. Le PC utilise actuellement son import transactionnel direct dans la base Rekordbox ; aucun XML fictif n’est annoncé.
 
 ## Direction visuelle
 
@@ -40,14 +40,19 @@ La première configuration permet de renseigner le Base ID, la table et le nom d
 | Artiste | partage Spotify / enrichissement | oui |
 | Lien Spotify | partage Spotify | oui |
 | Spotify Track ID | lien/URI Spotify | oui |
+| ISRC | saisie/enrichissement | non |
 | Statut | valeur configurée, par défaut `À qualifier` | oui |
-| Genre brut | saisie ou enrichissement ultérieur | non |
+| Genre brut Soundcharts | saisie ou enrichissement ultérieur | non |
 | Énergie | saisie rapide | non |
 | Mood | saisie rapide | non |
 | Situation | saisie rapide | non |
 | DJs inspirants | saisie rapide | non |
 | Commentaire | saisie ou note vocale transcrite ultérieurement | non |
 | Source | valeur configurée, par défaut `Spotify` | recommandé |
+| État RekordBot | `À traiter` puis retour PC | oui |
+| Erreur RekordBot | retour PC | non |
+| Dernière synchro | retour PC | non |
+| Méthode de matching | retour PC | non |
 
 Les intitulés exacts et les valeurs de champs Select seront configurables, pour correspondre à la base Airtable existante.
 
@@ -124,14 +129,16 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Terminé quand** : les données complémentaires peuvent être ajoutées sans perturber la capture rapide.
 
-### P7 — Contrat de synchronisation avec Rekordbot PC
+### P7 — Contrat de synchronisation avec Rekordbot PC ✅
 
 - Documenter les champs Airtable lus/écrits par Rekordbot PC et leurs statuts.
 - Faire reconnaître en priorité Spotify Track ID puis ISRC, avant toute comparaison par titre/artiste.
 - Renvoyer dans Airtable un état détaillé : à traiter, fichier trouvé, fichier absent, prêt pour Rekordbox, erreur.
-- Conserver l’objectif : association avec des fichiers obtenus légalement, puis export Rekordbox XML.
+- Conserver l’objectif : association avec des fichiers locaux obtenus légalement, puis import transactionnel direct par RekordBot PC.
 
 **Terminé quand** : Rekordbot PC peut traiter les entrées de l’application sans ambiguïté.
+
+**Livré** : contrat versionné dans `docs/AIRTABLE_SYNC_CONTRACT.md`, ISRC optionnel persistant dans Room, mapping Airtable configurable et champs de retour PC distincts de `Statut`. Les valeurs par défaut suivent la table `Sons` et toute nouvelle ligne démarre avec `État RekordBot = À traiter`.
 
 ### P8 — Finition et publication
 

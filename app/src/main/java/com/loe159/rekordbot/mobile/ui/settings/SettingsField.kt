@@ -8,7 +8,12 @@ enum class SettingsField {
     ARTIST,
     SPOTIFY_URL,
     SPOTIFY_TRACK_ID,
+    ISRC,
     STATUS,
+    REKORDBOT_STATE,
+    REKORDBOT_ERROR,
+    LAST_SYNC,
+    MATCHING_METHOD,
     RAW_GENRE,
     ENERGY,
     MOOD,
@@ -18,4 +23,5 @@ enum class SettingsField {
     SOURCE,
     DEFAULT_STATUS,
     DEFAULT_SOURCE,
+    DEFAULT_REKORDBOT_STATE,
 }

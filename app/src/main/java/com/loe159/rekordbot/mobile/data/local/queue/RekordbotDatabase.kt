@@ -13,7 +13,7 @@ import org.json.JSONArray
 
 @Database(
     entities = [QueuedTrackEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(QueueConverters::class)
@@ -29,7 +29,7 @@ abstract class RekordbotDatabase : RoomDatabase() {
                 context.applicationContext,
                 RekordbotDatabase::class.java,
                 "rekordbot.db",
-            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
         }
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -44,6 +44,12 @@ abstract class RekordbotDatabase : RoomDatabase() {
                 database.execSQL(
                     "ALTER TABLE queued_tracks ADD COLUMN inspirationalDjs TEXT NOT NULL DEFAULT '[]'",
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE queued_tracks ADD COLUMN isrc TEXT")
             }
         }
     }

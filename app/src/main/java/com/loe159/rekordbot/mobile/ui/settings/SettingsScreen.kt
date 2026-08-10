@@ -289,7 +289,28 @@ private fun FieldMappingsSection(
             fields.spotifyTrackId,
             { onFieldChange(SettingsField.SPOTIFY_TRACK_ID, it) },
         )
+        SettingsTextField("ISRC (optionnel)", fields.isrc, { onFieldChange(SettingsField.ISRC, it) })
         SettingsTextField("Statut", fields.status, { onFieldChange(SettingsField.STATUS, it) })
+        SettingsTextField(
+            "État RekordBot",
+            fields.rekordbotState,
+            { onFieldChange(SettingsField.REKORDBOT_STATE, it) },
+        )
+        SettingsTextField(
+            "Erreur RekordBot",
+            fields.rekordbotError,
+            { onFieldChange(SettingsField.REKORDBOT_ERROR, it) },
+        )
+        SettingsTextField(
+            "Dernière synchro",
+            fields.lastSync,
+            { onFieldChange(SettingsField.LAST_SYNC, it) },
+        )
+        SettingsTextField(
+            "Méthode de matching",
+            fields.matchingMethod,
+            { onFieldChange(SettingsField.MATCHING_METHOD, it) },
+        )
         SettingsTextField(
             "Genre brut (optionnel)",
             fields.rawGenre,
@@ -342,6 +363,11 @@ private fun DefaultsSection(
             label = "Source",
             value = configuration.defaultSource,
             onValueChange = { onFieldChange(SettingsField.DEFAULT_SOURCE, it) },
+        )
+        SettingsTextField(
+            label = "État RekordBot initial",
+            value = configuration.defaultRekordbotState,
+            onValueChange = { onFieldChange(SettingsField.DEFAULT_REKORDBOT_STATE, it) },
         )
     }
 }

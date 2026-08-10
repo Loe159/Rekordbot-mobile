@@ -47,6 +47,9 @@ class DirectAirtableGateway(
                     "rekordbot-test-${System.currentTimeMillis()}",
                 )
                 put(configuration.fields.status, configuration.defaultStatus)
+                if (configuration.fields.rekordbotState.isNotBlank()) {
+                    put(configuration.fields.rekordbotState, configuration.defaultRekordbotState)
+                }
                 if (configuration.fields.source.isNotBlank() && configuration.defaultSource.isNotBlank()) {
                     put(configuration.fields.source, configuration.defaultSource)
                 }

@@ -28,7 +28,21 @@ class SharedPreferencesAirtableConfigurationRepository(
                     KEY_FIELD_SPOTIFY_TRACK_ID,
                     defaults.spotifyTrackId,
                 ).orEmpty(),
+                isrc = preferences.getString(KEY_FIELD_ISRC, defaults.isrc).orEmpty(),
                 status = preferences.getString(KEY_FIELD_STATUS, defaults.status).orEmpty(),
+                rekordbotState = preferences.getString(
+                    KEY_FIELD_REKORDBOT_STATE,
+                    defaults.rekordbotState,
+                ).orEmpty(),
+                rekordbotError = preferences.getString(
+                    KEY_FIELD_REKORDBOT_ERROR,
+                    defaults.rekordbotError,
+                ).orEmpty(),
+                lastSync = preferences.getString(KEY_FIELD_LAST_SYNC, defaults.lastSync).orEmpty(),
+                matchingMethod = preferences.getString(
+                    KEY_FIELD_MATCHING_METHOD,
+                    defaults.matchingMethod,
+                ).orEmpty(),
                 rawGenre = preferences.getString(KEY_FIELD_RAW_GENRE, defaults.rawGenre).orEmpty(),
                 energy = preferences.getString(KEY_FIELD_ENERGY, defaults.energy).orEmpty(),
                 mood = preferences.getString(KEY_FIELD_MOOD, defaults.mood).orEmpty(),
@@ -42,6 +56,10 @@ class SharedPreferencesAirtableConfigurationRepository(
             ),
             defaultStatus = preferences.getString(KEY_DEFAULT_STATUS, "À qualifier").orEmpty(),
             defaultSource = preferences.getString(KEY_DEFAULT_SOURCE, "Spotify").orEmpty(),
+            defaultRekordbotState = preferences.getString(
+                KEY_DEFAULT_REKORDBOT_STATE,
+                "À traiter",
+            ).orEmpty(),
             duplicateStrategy = preferences.getString(
                 KEY_DUPLICATE_STRATEGY,
                 DuplicateStrategy.BLOCK.name,
@@ -62,7 +80,12 @@ class SharedPreferencesAirtableConfigurationRepository(
             .putString(KEY_FIELD_ARTIST, configuration.fields.artist.trim())
             .putString(KEY_FIELD_SPOTIFY_URL, configuration.fields.spotifyUrl.trim())
             .putString(KEY_FIELD_SPOTIFY_TRACK_ID, configuration.fields.spotifyTrackId.trim())
+            .putString(KEY_FIELD_ISRC, configuration.fields.isrc.trim())
             .putString(KEY_FIELD_STATUS, configuration.fields.status.trim())
+            .putString(KEY_FIELD_REKORDBOT_STATE, configuration.fields.rekordbotState.trim())
+            .putString(KEY_FIELD_REKORDBOT_ERROR, configuration.fields.rekordbotError.trim())
+            .putString(KEY_FIELD_LAST_SYNC, configuration.fields.lastSync.trim())
+            .putString(KEY_FIELD_MATCHING_METHOD, configuration.fields.matchingMethod.trim())
             .putString(KEY_FIELD_RAW_GENRE, configuration.fields.rawGenre.trim())
             .putString(KEY_FIELD_ENERGY, configuration.fields.energy.trim())
             .putString(KEY_FIELD_MOOD, configuration.fields.mood.trim())
@@ -72,6 +95,7 @@ class SharedPreferencesAirtableConfigurationRepository(
             .putString(KEY_FIELD_SOURCE, configuration.fields.source.trim())
             .putString(KEY_DEFAULT_STATUS, configuration.defaultStatus.trim())
             .putString(KEY_DEFAULT_SOURCE, configuration.defaultSource.trim())
+            .putString(KEY_DEFAULT_REKORDBOT_STATE, configuration.defaultRekordbotState.trim())
             .putString(KEY_DUPLICATE_STRATEGY, configuration.duplicateStrategy.name)
             .putBoolean(KEY_CONNECTION_VALIDATED, false)
             .commit()
@@ -95,7 +119,12 @@ class SharedPreferencesAirtableConfigurationRepository(
         const val KEY_FIELD_ARTIST = "field_artist"
         const val KEY_FIELD_SPOTIFY_URL = "field_spotify_url"
         const val KEY_FIELD_SPOTIFY_TRACK_ID = "field_spotify_track_id"
+        const val KEY_FIELD_ISRC = "field_isrc"
         const val KEY_FIELD_STATUS = "field_status"
+        const val KEY_FIELD_REKORDBOT_STATE = "field_rekordbot_state"
+        const val KEY_FIELD_REKORDBOT_ERROR = "field_rekordbot_error"
+        const val KEY_FIELD_LAST_SYNC = "field_last_sync"
+        const val KEY_FIELD_MATCHING_METHOD = "field_matching_method"
         const val KEY_FIELD_RAW_GENRE = "field_raw_genre"
         const val KEY_FIELD_ENERGY = "field_energy"
         const val KEY_FIELD_MOOD = "field_mood"
@@ -105,6 +134,7 @@ class SharedPreferencesAirtableConfigurationRepository(
         const val KEY_FIELD_SOURCE = "field_source"
         const val KEY_DEFAULT_STATUS = "default_status"
         const val KEY_DEFAULT_SOURCE = "default_source"
+        const val KEY_DEFAULT_REKORDBOT_STATE = "default_rekordbot_state"
         const val KEY_DUPLICATE_STRATEGY = "duplicate_strategy"
         const val KEY_CONNECTION_VALIDATED = "connection_validated"
     }

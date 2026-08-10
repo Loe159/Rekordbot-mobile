@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-> État actuel : **P5 — saisie DJ rapide**. L’enrichissement optionnel arrive en P6 dans la [roadmap](ROADMAP.md).
+> Le contrat P7 de synchronisation Mobile ↔ Airtable ↔ PC est documenté et versionné. Voir [docs/AIRTABLE_SYNC_CONTRACT.md](docs/AIRTABLE_SYNC_CONTRACT.md).
 
 ## Stack
 
@@ -41,17 +41,17 @@ Dans l’application, ouvrir **Configurer Airtable**, puis renseigner :
 
 1. un Personal Access Token limité à la base cible avec les droits `schema.bases:read`, `data.records:read` et `data.records:write` ;
 2. le Base ID (`app…`) et le nom ou l’ID de la table (`tbl…`) ;
-3. les noms exacts des champs Airtable et les valeurs par défaut.
+3. les noms exacts des champs Airtable et les valeurs par défaut. Les valeurs proposées correspondent à la table `Sons`.
 
 Les champs optionnels absents de la table peuvent être laissés vides. **Tester la connexion** lit le schéma de la vraie table, vérifie chaque champ configuré et enregistre la configuration si elle est valide. La création d’un enregistrement de démonstration demande ensuite une confirmation explicite.
 
 ## Partager depuis Spotify
 
-Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau.
+Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien, du Track ID et d’un ISRC optionnel. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau.
 
 Avant l’envoi, les raccourcis mobiles permettent de choisir une énergie de 1 à 5, plusieurs moods, situations et DJs inspirants, puis d’ajouter un commentaire. Ces valeurs sont facultatives : l’énergie est envoyée comme nombre Airtable et les sélections multiples comme tableaux JSON, jamais comme texte concaténé.
 
-Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source et le statut par défaut. **Garder comme brouillon** conserve aussi un morceau incomplet dans la même base Room, sans l’envoyer. La stratégie de doublons se règle dans **Doublons Spotify** : elle peut bloquer un Track ID déjà présent ou autoriser sa création. Si le réseau ou Airtable est indisponible, le morceau est conservé dans Room avec un UUID d’opération stable, puis WorkManager reprend automatiquement l’envoi dès que le réseau revient.
+Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source, le statut de capture et `État RekordBot = À traiter`. Les champs de retour PC (`Erreur RekordBot`, `Dernière synchro`, `Méthode de matching`) restent distincts et ne sont pas inventés par le mobile. **Garder comme brouillon** conserve aussi un morceau incomplet dans la même base Room, sans l’envoyer. La stratégie de doublons se règle dans **Doublons Spotify** : elle peut bloquer un Track ID déjà présent ou autoriser sa création. Si le réseau ou Airtable est indisponible, le morceau est conservé dans Room avec un UUID d’opération stable, puis WorkManager reprend automatiquement l’envoi dès que le réseau revient.
 
 La **File d’attente** de l’accueil affiche les brouillons et les opérations en attente, en cours, envoyées ou en échec. Un brouillon reste modifiable, même incomplet, et n’entre dans la file d’envoi qu’après l’action **Envoyer**. Les opérations non envoyées permettent aussi de modifier la qualification DJ. Un échec peut être relancé ou supprimé. Les opérations interrompues sont récupérées au prochain démarrage ; avant toute nouvelle tentative incertaine, le Track ID Spotify est vérifié pour éviter une seconde création.
 

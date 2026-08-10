@@ -16,6 +16,7 @@ class QueueDraftRoundTripTest {
             title = "Open Eye Signal",
             artist = "Jon Hopkins",
             spotifyUrl = "https://open.spotify.com/track/spotify-id",
+            isrc = "GB-CEL-21-00001",
             energy = 4,
             moods = listOf("Calme", "Mystérieux"),
             situations = listOf("Warm-up", "Sunset"),

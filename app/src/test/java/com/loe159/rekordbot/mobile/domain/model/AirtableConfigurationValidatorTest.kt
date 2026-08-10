@@ -18,7 +18,7 @@ class AirtableConfigurationValidatorTest {
 
     @Test
     fun `missing access values return understandable errors`() {
-        val errors = AirtableConfigurationValidator.localErrors(AirtableConfiguration())
+        val errors = AirtableConfigurationValidator.localErrors(AirtableConfiguration(table = ""))
 
         assertTrue(errors.contains("Le token Airtable est obligatoire."))
         assertTrue(errors.contains("Le Base ID est obligatoire."))

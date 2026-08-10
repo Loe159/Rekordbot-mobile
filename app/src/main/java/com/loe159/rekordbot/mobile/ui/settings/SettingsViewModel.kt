@@ -186,7 +186,12 @@ class SettingsViewModel(
         SettingsField.ARTIST -> copy(fields = fields.copy(artist = value))
         SettingsField.SPOTIFY_URL -> copy(fields = fields.copy(spotifyUrl = value))
         SettingsField.SPOTIFY_TRACK_ID -> copy(fields = fields.copy(spotifyTrackId = value))
+        SettingsField.ISRC -> copy(fields = fields.copy(isrc = value))
         SettingsField.STATUS -> copy(fields = fields.copy(status = value))
+        SettingsField.REKORDBOT_STATE -> copy(fields = fields.copy(rekordbotState = value))
+        SettingsField.REKORDBOT_ERROR -> copy(fields = fields.copy(rekordbotError = value))
+        SettingsField.LAST_SYNC -> copy(fields = fields.copy(lastSync = value))
+        SettingsField.MATCHING_METHOD -> copy(fields = fields.copy(matchingMethod = value))
         SettingsField.RAW_GENRE -> copy(fields = fields.copy(rawGenre = value))
         SettingsField.ENERGY -> copy(fields = fields.copy(energy = value))
         SettingsField.MOOD -> copy(fields = fields.copy(mood = value))
@@ -196,6 +201,7 @@ class SettingsViewModel(
         SettingsField.SOURCE -> copy(fields = fields.copy(source = value))
         SettingsField.DEFAULT_STATUS -> copy(defaultStatus = value)
         SettingsField.DEFAULT_SOURCE -> copy(defaultSource = value)
+        SettingsField.DEFAULT_REKORDBOT_STATE -> copy(defaultRekordbotState = value)
     }
 
     companion object {

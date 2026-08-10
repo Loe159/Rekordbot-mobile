@@ -8,6 +8,7 @@ data class AirtableConfiguration(
     val defaultStatus: String = "À qualifier",
     val defaultSource: String = "Spotify",
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.BLOCK,
+    val defaultRekordbotState: String = "À traiter",
 )
 
 enum class DuplicateStrategy {
@@ -20,7 +21,12 @@ data class AirtableFieldMappings(
     val artist: String = "Artiste",
     val spotifyUrl: String = "Lien Spotify",
     val spotifyTrackId: String = "Spotify Track ID",
+    val isrc: String = "ISRC",
     val status: String = "Statut",
+    val rekordbotState: String = "État RekordBot",
+    val rekordbotError: String = "Erreur RekordBot",
+    val lastSync: String = "Dernière synchro",
+    val matchingMethod: String = "Méthode de matching",
     val rawGenre: String = "Genre brut",
     val energy: String = "Énergie",
     val mood: String = "Mood",
@@ -34,7 +40,12 @@ data class AirtableFieldMappings(
         artist,
         spotifyUrl,
         spotifyTrackId,
+        isrc,
         status,
+        rekordbotState,
+        rekordbotError,
+        lastSync,
+        matchingMethod,
         rawGenre,
         energy,
         mood,
