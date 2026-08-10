@@ -10,6 +10,8 @@ import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
 import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
+import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyMetadataGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
 
@@ -21,6 +23,8 @@ fun SharePreviewRoute(
     airtableGateway: AirtableGateway,
     pendingTrackRepository: PendingTrackRepository,
     queueWorkScheduler: QueueWorkScheduler,
+    soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+    soundchartsGateway: SoundchartsGateway,
     onBack: () -> Unit,
 ) {
     val needsMetadata = parseResult.draft.spotifyTrackId.isNotBlank() &&
@@ -49,6 +53,8 @@ fun SharePreviewRoute(
             airtableGateway = airtableGateway,
             pendingTrackRepository = pendingTrackRepository,
             queueWorkScheduler = queueWorkScheduler,
+            soundchartsConfigurationRepository = soundchartsConfigurationRepository,
+            soundchartsGateway = soundchartsGateway,
         ),
     )
     val state by viewModel.state.collectAsState()
@@ -68,6 +74,7 @@ fun SharePreviewRoute(
         onDraftChange = viewModel::updateDraft,
         onSaveDraft = viewModel::saveDraft,
         onSubmit = viewModel::submit,
+        onReplaceSuggestedGenre = viewModel::replaceGenreWithSuggestion,
         onBack = onBack,
     )
 }

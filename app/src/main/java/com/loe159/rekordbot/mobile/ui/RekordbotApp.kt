@@ -12,11 +12,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesAirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.data.local.SharedPreferencesSoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.data.local.queue.RekordbotDatabase
 import com.loe159.rekordbot.mobile.data.local.queue.RoomPendingTrackRepository
 import com.loe159.rekordbot.mobile.data.work.WorkManagerQueueScheduler
 import com.loe159.rekordbot.mobile.data.remote.airtable.DirectAirtableGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.SpotifyWebMetadataGateway
+import com.loe159.rekordbot.mobile.data.remote.soundcharts.DirectSoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
 import com.loe159.rekordbot.mobile.ui.home.HomeRoute
 import com.loe159.rekordbot.mobile.ui.queue.QueueRoute
@@ -34,6 +36,10 @@ fun RekordbotApp(
         SharedPreferencesAirtableConfigurationRepository(context.applicationContext)
     }
     val airtableGateway = remember { DirectAirtableGateway() }
+    val soundchartsConfigurationRepository = remember {
+        SharedPreferencesSoundchartsConfigurationRepository(context.applicationContext)
+    }
+    val soundchartsGateway = remember { DirectSoundchartsGateway() }
     val spotifyMetadataGateway = remember { SpotifyWebMetadataGateway() }
     val pendingTrackRepository = remember {
         RoomPendingTrackRepository(
@@ -65,12 +71,16 @@ fun RekordbotApp(
                 airtableGateway = airtableGateway,
                 pendingTrackRepository = pendingTrackRepository,
                 queueWorkScheduler = queueWorkScheduler,
+                soundchartsConfigurationRepository = soundchartsConfigurationRepository,
+                soundchartsGateway = soundchartsGateway,
                 onBack = onShareClosed,
             )
         } else if (showSettings) {
             SettingsRoute(
                 configurationRepository = configurationRepository,
                 airtableGateway = airtableGateway,
+                soundchartsConfigurationRepository = soundchartsConfigurationRepository,
+                soundchartsGateway = soundchartsGateway,
                 onBack = { showSettings = false },
                 onConfigurationSaved = { configurationVersion++ },
             )

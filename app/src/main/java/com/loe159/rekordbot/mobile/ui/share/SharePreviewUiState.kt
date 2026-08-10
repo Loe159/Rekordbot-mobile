@@ -12,4 +12,7 @@ data class SharePreviewUiState(
     val savedDraftOperationId: String? = null,
     val draftSaveError: String? = null,
     val submissionResult: AirtableTrackSubmissionResult? = null,
+    val isSoundchartsEnriching: Boolean = false,
+    val soundchartsMessage: String? = null,
+    val suggestedRawGenre: String? = null,
 )

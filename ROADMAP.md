@@ -120,7 +120,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : énergie 1–5, moods colorés, situations, DJs inspirants et commentaire accessibles depuis l’aperçu et l’édition de la file. Les brouillons utilisent la même base Room que les envois, restent hors du traitement automatique jusqu’à l’action **Envoyer**, et peuvent rester incomplets. Airtable reçoit l’énergie comme nombre et les sélections multiples comme tableaux JSON. Les valeurs de qualification sont centralisées dans `DjQualificationOptions` pour suivre facilement la configuration Airtable ; le commentaire constitue le point d’extension non bloquant pour une future transcription vocale.
 
-### P6 — Enrichissement des métadonnées
+### P6 — Enrichissement des métadonnées ✅
 
 - Conserver le Spotify Track ID comme identifiant de référence.
 - Ajouter un enrichissement optionnel des métadonnées depuis une source compatible.
@@ -128,6 +128,8 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 - Ne jamais écraser une valeur renseignée manuellement sans choix explicite.
 
 **Terminé quand** : les données complémentaires peuvent être ajoutées sans perturber la capture rapide.
+
+**Livré** : configuration Soundcharts optionnelle avec test, coffre Keystore dédié et endpoint Spotify officiel v2.25 utilisant les identifiants legacy existants. Le parser accepte les formats souples `root`/`sub`, ordonne et dédoublonne les genres en texte brut, et récupère l’ISRC. La fusion s’effectue sur le brouillon courant sans écraser les éditions ; un genre manuel différent devient une suggestion avec remplacement explicite. Toutes les erreurs Soundcharts restent informatives et non bloquantes pour Airtable ou les brouillons. OAuth côté serveur reste la voie recommandée par Soundcharts ; le mode mobile direct est limité au support des credentials legacy existants.
 
 ### P7 — Contrat de synchronisation avec Rekordbot PC ✅
 

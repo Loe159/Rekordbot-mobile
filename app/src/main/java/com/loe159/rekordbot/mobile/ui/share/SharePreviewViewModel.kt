@@ -9,6 +9,9 @@ import com.loe159.rekordbot.mobile.domain.airtable.SubmitTrackToAirtable
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.repository.PendingTrackRepository
+import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsDraftEnricher
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.queue.QueueWorkScheduler
 import com.loe159.rekordbot.mobile.domain.queue.QueueOperationIdFactory
 import com.loe159.rekordbot.mobile.domain.queue.UuidQueueOperationIdFactory
@@ -24,6 +27,8 @@ class SharePreviewViewModel(
     airtableGateway: AirtableGateway,
     private val pendingTrackRepository: PendingTrackRepository,
     private val queueWorkScheduler: QueueWorkScheduler,
+    private val soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+    private val soundchartsGateway: SoundchartsGateway,
     private val operationIdFactory: QueueOperationIdFactory = UuidQueueOperationIdFactory,
 ) : ViewModel() {
     private val submitTrack = SubmitTrackToAirtable(
@@ -44,6 +49,72 @@ class SharePreviewViewModel(
                     isAirtableConfigured = configured,
                 )
             }
+        }
+        enrichWithSoundcharts()
+    }
+
+    private fun enrichWithSoundcharts() {
+        val trackId = state.value.draft.spotifyTrackId
+        if (trackId.isBlank()) return
+        viewModelScope.launch {
+            val configuration = runCatching { soundchartsConfigurationRepository.load() }
+                .getOrElse {
+                    mutableState.update {
+                        it.copy(soundchartsMessage = "Enrichissement Soundcharts indisponible.")
+                    }
+                    return@launch
+                }
+            if (!configuration.enabled || !configuration.isComplete) return@launch
+            mutableState.update {
+                it.copy(
+                    isSoundchartsEnriching = true,
+                    soundchartsMessage = "Recherche du genre et de l’ISRC dans Soundcharts…",
+                )
+            }
+            soundchartsGateway.fetchTrackMetadata(trackId, configuration)
+                .onSuccess { metadata ->
+                    mutableState.update { current ->
+                        if (current.draft.spotifyTrackId != trackId) {
+                            return@update current.copy(
+                                isSoundchartsEnriching = false,
+                                soundchartsMessage = "Track ID modifié : résultat Soundcharts ignoré.",
+                            )
+                        }
+                        val enrichment = SoundchartsDraftEnricher.merge(current.draft, metadata)
+                        current.copy(
+                            draft = enrichment.draft,
+                            isSoundchartsEnriching = false,
+                            suggestedRawGenre = enrichment.genreSuggestion,
+                            soundchartsMessage = if (enrichment.genreSuggestion != null) {
+                                "Soundcharts propose un autre genre. Ta saisie a été conservée."
+                            } else {
+                                "Métadonnées Soundcharts ajoutées quand les champs étaient vides."
+                            },
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    mutableState.update {
+                        it.copy(
+                            isSoundchartsEnriching = false,
+                            soundchartsMessage = error.message
+                                ?.let { message -> "Soundcharts : $message L’envoi reste disponible." }
+                                ?: "Enrichissement Soundcharts indisponible. L’envoi reste disponible.",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun replaceGenreWithSuggestion() {
+        mutableState.update { current ->
+            val suggestion = current.suggestedRawGenre ?: return@update current
+            if (current.submissionResult.isComplete()) return@update current
+            current.copy(
+                draft = current.draft.copy(rawGenre = suggestion),
+                suggestedRawGenre = null,
+                soundchartsMessage = "Genre remplacé par la suggestion Soundcharts.",
+            )
         }
     }
 
@@ -142,6 +213,8 @@ class SharePreviewViewModel(
             airtableGateway: AirtableGateway,
             pendingTrackRepository: PendingTrackRepository,
             queueWorkScheduler: QueueWorkScheduler,
+            soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+            soundchartsGateway: SoundchartsGateway,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = SharePreviewViewModel(
@@ -150,6 +223,8 @@ class SharePreviewViewModel(
                 airtableGateway = airtableGateway,
                 pendingTrackRepository = pendingTrackRepository,
                 queueWorkScheduler = queueWorkScheduler,
+                soundchartsConfigurationRepository = soundchartsConfigurationRepository,
+                soundchartsGateway = soundchartsGateway,
             ) as T
         }
     }

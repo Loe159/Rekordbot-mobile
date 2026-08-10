@@ -20,7 +20,7 @@ app/src/main/java/com/loe159/rekordbot/mobile/
 ├── data/
 │   ├── local/                 # Configuration chiffrée et file Room
 │   ├── work/                  # Reprise réseau via WorkManager
-│   └── remote/airtable/       # Schéma, doublons et création directe Airtable
+│   └── remote/                # Airtable, Spotify public et Soundcharts optionnel
 ├── domain/
 │   ├── model/                 # Modèles métier indépendants de l’UI
 │   ├── spotify/               # Parsing des liens, URI et métadonnées partagées
@@ -34,6 +34,8 @@ app/src/main/java/com/loe159/rekordbot/mobile/
 ```
 
 L’application appelle directement l’API Airtable, sans dépendance à un PC ni API intermédiaire. Le Personal Access Token est chiffré en AES-GCM avec une clé conservée dans l’Android Keystore ; les sauvegardes Android de l’application sont désactivées pour ne pas exporter sa configuration.
+
+Les identifiants Soundcharts sont facultatifs et conservés dans un coffre Keystore distinct de celui d’Airtable. Ils ne sont ni committés ni journalisés.
 
 ## Configurer Airtable
 
@@ -57,6 +59,14 @@ La **File d’attente** de l’accueil affiche les brouillons et les opérations
 
 Les valeurs exactes proposées sont centralisées dans `DjQualificationOptions` : moods `Sexy`, `Énergique`, `Sombre`, `Joyeux`, `Ambiant`, `Calme`, `Mystérieux`, `Triste`, situations du warm-up au B2B, et la liste de DJs inspirants utilisée dans Airtable. Leur orthographe peut ainsi évoluer à un seul endroit.
 
+## Enrichissement Soundcharts optionnel
+
+Dans **Réglages → Enrichissement Soundcharts**, l’option peut être activée avec un `App ID` et une `API Key` legacy existants, puis testée. L’application interroge l’endpoint officiel `GET /api/v2.25/song/by-platform/spotify/{id}` à partir du Spotify Track ID et en extrait l’ISRC ainsi que les genres `root`/`sub`, conservés dans leur ordre sous forme de texte brut dédoublonné.
+
+Soundcharts recommande désormais OAuth côté serveur. Le mode direct mobile `x-app-id` / `x-api-key` est donc réservé aux comptes disposant déjà de ces identifiants legacy ; aucun nouveau secret ne doit être intégré au code ou distribué dans l’APK.
+
+L’enrichissement reste non bloquant : une erreur d’authentification, un morceau absent ou une limite de requêtes n’empêche jamais l’envoi ni l’enregistrement d’un brouillon. Un genre ou un ISRC déjà saisi est conservé. Si Soundcharts propose un genre différent, l’aperçu affiche une suggestion et demande explicitement de choisir **Remplacer par la suggestion**.
+
 ## Lancer le projet
 
 Pré-requis : Android Studio compatible AGP 8.13, JDK 17 et SDK Android 36.
@@ -77,4 +87,4 @@ La CI exécute les mêmes contrôles à chaque push et pull request.
 
 ## Configuration locale
 
-Ne jamais commiter de token Airtable ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés.
+Ne jamais commiter de token Airtable, d’identifiants Soundcharts ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés.

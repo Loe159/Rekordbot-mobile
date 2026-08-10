@@ -48,6 +48,7 @@ fun SharePreviewScreen(
     onDraftChange: ((TrackDraft) -> TrackDraft) -> Unit,
     onSaveDraft: () -> Unit,
     onSubmit: () -> Unit,
+    onReplaceSuggestedGenre: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -77,6 +78,7 @@ fun SharePreviewScreen(
                 spotifyUrl = draft.spotifyUrl,
                 trackId = draft.spotifyTrackId,
                 isrc = draft.isrc.orEmpty(),
+                rawGenre = draft.rawGenre.orEmpty(),
                 isComplete = draft.isReadyForAirtable,
                 onTitleChange = { value -> onDraftChange { it.copy(title = value) } },
                 onArtistChange = { value -> onDraftChange { it.copy(artist = value) } },
@@ -85,6 +87,9 @@ fun SharePreviewScreen(
                     onDraftChange { it.copy(spotifyTrackId = value) }
                 },
                 onIsrcChange = { value -> onDraftChange { it.copy(isrc = value.ifBlank { null }) } },
+                onRawGenreChange = { value ->
+                    onDraftChange { it.copy(rawGenre = value.ifBlank { null }) }
+                },
                 enabled = !isMetadataLoading && !isLocked,
             )
             DjQualificationFields(
@@ -94,6 +99,13 @@ fun SharePreviewScreen(
             )
             initialMessage?.let {
                 ShareMessage(message = it, isError = isInitialError)
+            }
+            state.soundchartsMessage?.let {
+                SoundchartsSuggestionMessage(
+                    message = it,
+                    suggestion = state.suggestedRawGenre,
+                    onReplace = onReplaceSuggestedGenre,
+                )
             }
             state.submissionResult?.let { SubmissionMessage(it) }
             state.savedDraftOperationId?.let {
@@ -163,12 +175,14 @@ private fun PreviewCard(
     spotifyUrl: String,
     trackId: String,
     isrc: String,
+    rawGenre: String,
     isComplete: Boolean,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSpotifyUrlChange: (String) -> Unit,
     onTrackIdChange: (String) -> Unit,
     onIsrcChange: (String) -> Unit,
+    onRawGenreChange: (String) -> Unit,
     enabled: Boolean,
 ) {
     Surface(
@@ -201,6 +215,29 @@ private fun PreviewCard(
             PreviewTextField("Lien Spotify", spotifyUrl, onSpotifyUrlChange, enabled)
             PreviewTextField("Spotify Track ID", trackId, onTrackIdChange, enabled)
             PreviewTextField("ISRC (optionnel)", isrc, onIsrcChange, enabled)
+            PreviewTextField("Genre brut (optionnel)", rawGenre, onRawGenreChange, enabled)
+        }
+    }
+}
+
+@Composable
+private fun SoundchartsSuggestionMessage(
+    message: String,
+    suggestion: String?,
+    onReplace: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = RekordbotPrimary.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, RekordbotPrimary.copy(alpha = 0.45f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+            if (suggestion != null) {
+                Text("Suggestion : $suggestion", style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = onReplace) { Text("Remplacer par la suggestion") }
+            }
         }
     }
 }
@@ -291,6 +328,7 @@ private fun SharePreviewScreenPreview() {
             onDraftChange = {},
             onSaveDraft = {},
             onSubmit = {},
+            onReplaceSuggestedGenre = {},
             onBack = {},
         )
     }

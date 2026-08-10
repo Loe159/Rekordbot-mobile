@@ -91,4 +91,22 @@ class AirtableRecordMapperTest {
             AirtableFormula.textEquals("Spotify } ID", "abc'def\\ghi"),
         )
     }
+
+    @Test
+    fun `Soundcharts raw text and ISRC keep their exact Airtable mapping`() {
+        val fields = AirtableRecordMapper.fields(
+            AirtableConfiguration(),
+            TrackDraft(
+                spotifyTrackId = "spotify-id",
+                title = "Title",
+                artist = "Artist",
+                spotifyUrl = "https://open.spotify.com/track/spotify-id",
+                isrc = "GB-CEL-21-00001",
+                rawGenre = "Electronic, House, Afro House",
+            ),
+        )
+
+        assertEquals("GB-CEL-21-00001", fields["ISRC"])
+        assertEquals("Electronic, House, Afro House", fields["Genre brut"])
+    }
 }

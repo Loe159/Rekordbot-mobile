@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +43,8 @@ import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotError
@@ -54,11 +57,18 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 fun SettingsRoute(
     configurationRepository: AirtableConfigurationRepository,
     airtableGateway: AirtableGateway,
+    soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+    soundchartsGateway: SoundchartsGateway,
     onBack: () -> Unit,
     onConfigurationSaved: () -> Unit,
 ) {
     val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModel.factory(configurationRepository, airtableGateway),
+        factory = SettingsViewModel.factory(
+            configurationRepository,
+            airtableGateway,
+            soundchartsConfigurationRepository,
+            soundchartsGateway,
+        ),
     )
     val state by viewModel.state.collectAsState()
 
@@ -74,6 +84,11 @@ fun SettingsRoute(
         onSave = viewModel::save,
         onTestConnection = viewModel::testConnection,
         onCreateDemoRecord = viewModel::createDemoRecord,
+        onSoundchartsEnabledChange = viewModel::setSoundchartsEnabled,
+        onSoundchartsAppIdChange = viewModel::updateSoundchartsAppId,
+        onSoundchartsApiKeyChange = viewModel::updateSoundchartsApiKey,
+        onSaveSoundcharts = viewModel::saveSoundcharts,
+        onTestSoundcharts = viewModel::testSoundchartsConnection,
     )
 }
 
@@ -86,6 +101,11 @@ fun SettingsScreen(
     onSave: () -> Unit,
     onTestConnection: () -> Unit,
     onCreateDemoRecord: () -> Unit,
+    onSoundchartsEnabledChange: (Boolean) -> Unit,
+    onSoundchartsAppIdChange: (String) -> Unit,
+    onSoundchartsApiKeyChange: (String) -> Unit,
+    onSaveSoundcharts: () -> Unit,
+    onTestSoundcharts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showDemoConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -119,6 +139,14 @@ fun SettingsScreen(
                 DuplicateStrategySection(
                     configuration = state.configuration,
                     onStrategyChange = onDuplicateStrategyChange,
+                )
+                SoundchartsSection(
+                    state = state,
+                    onEnabledChange = onSoundchartsEnabledChange,
+                    onAppIdChange = onSoundchartsAppIdChange,
+                    onApiKeyChange = onSoundchartsApiKeyChange,
+                    onSave = onSaveSoundcharts,
+                    onTest = onTestSoundcharts,
                 )
 
                 state.message?.let {
@@ -182,6 +210,62 @@ fun SettingsScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SoundchartsSection(
+    state: SettingsUiState,
+    onEnabledChange: (Boolean) -> Unit,
+    onAppIdChange: (String) -> Unit,
+    onApiKeyChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onTest: () -> Unit,
+) {
+    val configuration = state.soundchartsConfiguration
+    SettingsSection(
+        title = "Enrichissement Soundcharts",
+        description = "Optionnel. Utilise uniquement des identifiants legacy x-app-id / x-api-key existants.",
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Activer l’enrichissement")
+            Switch(
+                checked = configuration.enabled,
+                onCheckedChange = onEnabledChange,
+                enabled = !state.isSoundchartsBusy,
+            )
+        }
+        SettingsTextField(
+            label = "Soundcharts App ID",
+            value = configuration.appId,
+            onValueChange = onAppIdChange,
+            isSecret = true,
+        )
+        SettingsTextField(
+            label = "Soundcharts API Key",
+            value = configuration.apiKey,
+            onValueChange = onApiKeyChange,
+            isSecret = true,
+        )
+        state.soundchartsMessage?.let {
+            SettingsMessage(it, state.isSoundchartsError)
+        }
+        RekordbotPrimaryButton(
+            label = if (state.isSoundchartsBusy) "Vérification…" else "Tester Soundcharts",
+            onClick = onTest,
+            enabled = !state.isSoundchartsBusy,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedButton(
+            onClick = onSave,
+            enabled = !state.isSoundchartsBusy,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+        ) { Text("Enregistrer Soundcharts") }
     }
 }
 
@@ -456,6 +540,11 @@ private fun SettingsScreenPreview() {
             onSave = {},
             onTestConnection = {},
             onCreateDemoRecord = {},
+            onSoundchartsEnabledChange = {},
+            onSoundchartsAppIdChange = {},
+            onSoundchartsApiKeyChange = {},
+            onSaveSoundcharts = {},
+            onTestSoundcharts = {},
         )
     }
 }

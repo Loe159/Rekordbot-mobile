@@ -8,6 +8,9 @@ import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsConfigurationValidator
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +20,8 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val configurationRepository: AirtableConfigurationRepository,
     private val airtableGateway: AirtableGateway,
+    private val soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+    private val soundchartsGateway: SoundchartsGateway,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = mutableState.asStateFlow()
@@ -24,12 +29,17 @@ class SettingsViewModel(
     init {
         viewModelScope.launch {
             runCatching {
-                configurationRepository.load() to configurationRepository.isConnectionValidated()
+                Triple(
+                    configurationRepository.load(),
+                    configurationRepository.isConnectionValidated(),
+                    soundchartsConfigurationRepository.load(),
+                )
             }
-                .onSuccess { (configuration, isConnectionValidated) ->
+                .onSuccess { (configuration, isConnectionValidated, soundchartsConfiguration) ->
                     mutableState.update {
                         it.copy(
                             configuration = configuration,
+                            soundchartsConfiguration = soundchartsConfiguration,
                             isLoading = false,
                             isConnectionValidated = isConnectionValidated,
                         )
@@ -43,6 +53,98 @@ class SettingsViewModel(
                             isError = true,
                         )
                     }
+                }
+        }
+    }
+
+    fun setSoundchartsEnabled(enabled: Boolean) {
+        mutableState.update {
+            it.copy(
+                soundchartsConfiguration = it.soundchartsConfiguration.copy(enabled = enabled),
+                soundchartsMessage = null,
+                isSoundchartsError = false,
+            )
+        }
+    }
+
+    fun updateSoundchartsAppId(value: String) {
+        mutableState.update {
+            it.copy(
+                soundchartsConfiguration = it.soundchartsConfiguration.copy(appId = value),
+                soundchartsMessage = null,
+                isSoundchartsError = false,
+            )
+        }
+    }
+
+    fun updateSoundchartsApiKey(value: String) {
+        mutableState.update {
+            it.copy(
+                soundchartsConfiguration = it.soundchartsConfiguration.copy(apiKey = value),
+                soundchartsMessage = null,
+                isSoundchartsError = false,
+            )
+        }
+    }
+
+    fun saveSoundcharts() {
+        val configuration = state.value.soundchartsConfiguration
+        val errors = SoundchartsConfigurationValidator.localErrors(configuration)
+        if (errors.isNotEmpty()) {
+            showSoundchartsErrors(errors)
+            return
+        }
+        viewModelScope.launch {
+            mutableState.update { it.copy(isSoundchartsBusy = true, soundchartsMessage = null) }
+            runCatching { soundchartsConfigurationRepository.save(configuration) }
+                .onSuccess {
+                    mutableState.update {
+                        it.copy(
+                            isSoundchartsBusy = false,
+                            soundchartsMessage = if (configuration.enabled) {
+                                "Configuration Soundcharts enregistrée."
+                            } else {
+                                "Enrichissement Soundcharts désactivé."
+                            },
+                            isSoundchartsError = false,
+                            savedVersion = it.savedVersion + 1,
+                        )
+                    }
+                }
+                .onFailure { showSoundchartsFailure("Enregistrement Soundcharts impossible.") }
+        }
+    }
+
+    fun testSoundchartsConnection() {
+        val configuration = state.value.soundchartsConfiguration
+        val errors = SoundchartsConfigurationValidator.localErrors(
+            configuration.copy(enabled = true),
+        )
+        if (errors.isNotEmpty()) {
+            showSoundchartsErrors(errors)
+            return
+        }
+        viewModelScope.launch {
+            mutableState.update { it.copy(isSoundchartsBusy = true, soundchartsMessage = null) }
+            soundchartsGateway.fetchTrackMetadata(SOUNDCHARTS_TEST_SPOTIFY_ID, configuration)
+                .onSuccess {
+                    runCatching { soundchartsConfigurationRepository.save(configuration) }
+                        .onSuccess {
+                            mutableState.update {
+                                it.copy(
+                                    isSoundchartsBusy = false,
+                                    soundchartsMessage = "Connexion Soundcharts validée.",
+                                    isSoundchartsError = false,
+                                    savedVersion = it.savedVersion + 1,
+                                )
+                            }
+                        }
+                        .onFailure { showSoundchartsFailure("Connexion valide, mais enregistrement impossible.") }
+                }
+                .onFailure { error ->
+                    showSoundchartsFailure(
+                        error.message ?: "Connexion Soundcharts impossible.",
+                    )
                 }
         }
     }
@@ -175,6 +277,26 @@ class SettingsViewModel(
         }
     }
 
+    private fun showSoundchartsErrors(errors: List<String>) {
+        mutableState.update {
+            it.copy(
+                isSoundchartsBusy = false,
+                soundchartsMessage = errors.joinToString("\n"),
+                isSoundchartsError = true,
+            )
+        }
+    }
+
+    private fun showSoundchartsFailure(message: String) {
+        mutableState.update {
+            it.copy(
+                isSoundchartsBusy = false,
+                soundchartsMessage = message,
+                isSoundchartsError = true,
+            )
+        }
+    }
+
     private fun AirtableConfiguration.withField(
         field: SettingsField,
         value: String,
@@ -208,10 +330,19 @@ class SettingsViewModel(
         fun factory(
             configurationRepository: AirtableConfigurationRepository,
             airtableGateway: AirtableGateway,
+            soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
+            soundchartsGateway: SoundchartsGateway,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                SettingsViewModel(configurationRepository, airtableGateway) as T
+                SettingsViewModel(
+                    configurationRepository,
+                    airtableGateway,
+                    soundchartsConfigurationRepository,
+                    soundchartsGateway,
+                ) as T
         }
+
+        private const val SOUNDCHARTS_TEST_SPOTIFY_ID = "4uLU6hMCjMI75M1A2tKUQC"
     }
 }
