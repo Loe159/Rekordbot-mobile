@@ -101,7 +101,8 @@ class SpotifyOAuthClient(
         else -> "Connexion Spotify impossible (HTTP $statusCode)."
     }
 
-    private fun String.formEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
+    private fun String.formEncode(): String =
+        URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
 
     companion object {
         const val DEFAULT_TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token"

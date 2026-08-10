@@ -76,7 +76,7 @@ class SpotifyPkceGenerator private constructor(
             Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
 
         private fun String.percentEncode(): String =
-            URLEncoder.encode(this, StandardCharsets.UTF_8).replace("+", "%20")
+            URLEncoder.encode(this, StandardCharsets.UTF_8.toString()).replace("+", "%20")
     }
 }
 
