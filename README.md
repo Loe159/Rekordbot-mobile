@@ -44,7 +44,7 @@ Les champs optionnels absents de la table peuvent être laissés vides. **Tester
 
 ## Partager depuis Spotify
 
-Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, les champs manquants sont signalés clairement. Aucun enregistrement Airtable n’est encore créé automatiquement en P2.
+Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau. En cas d’indisponibilité réseau, les champs restent modifiables manuellement. Aucun enregistrement Airtable n’est encore créé automatiquement en P2.
 
 ## Lancer le projet
 
