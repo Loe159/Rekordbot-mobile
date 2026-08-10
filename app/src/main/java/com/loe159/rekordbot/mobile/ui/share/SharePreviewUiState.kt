@@ -1,0 +1,12 @@
+package com.loe159.rekordbot.mobile.ui.share
+
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTrackSubmissionResult
+import com.loe159.rekordbot.mobile.domain.model.TrackDraft
+
+data class SharePreviewUiState(
+    val draft: TrackDraft,
+    val isConfigurationLoading: Boolean = true,
+    val isAirtableConfigured: Boolean = false,
+    val isSubmitting: Boolean = false,
+    val submissionResult: AirtableTrackSubmissionResult? = null,
+)

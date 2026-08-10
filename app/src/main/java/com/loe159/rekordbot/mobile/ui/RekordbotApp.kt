@@ -43,6 +43,8 @@ fun RekordbotApp(
             SharePreviewRoute(
                 parseResult = incomingShare,
                 metadataGateway = spotifyMetadataGateway,
+                configurationRepository = configurationRepository,
+                airtableGateway = airtableGateway,
                 onBack = onShareClosed,
             )
         } else if (showSettings) {

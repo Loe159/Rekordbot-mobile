@@ -20,39 +20,36 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTrackSubmissionResult
+import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
 import com.loe159.rekordbot.mobile.ui.components.RekordbotStatusBadge
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotError
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotMutedText
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
+import com.loe159.rekordbot.mobile.ui.theme.RekordbotSuccess
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotWarning
 
 @Composable
 fun SharePreviewScreen(
-    initialDraft: TrackDraft,
+    state: SharePreviewUiState,
     initialMessage: String?,
     isInitialError: Boolean,
     isMetadataLoading: Boolean = false,
+    onDraftChange: ((TrackDraft) -> TrackDraft) -> Unit,
+    onSubmit: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var title by rememberSaveable(initialDraft) { mutableStateOf(initialDraft.title) }
-    var artist by rememberSaveable(initialDraft) { mutableStateOf(initialDraft.artist) }
-    var spotifyUrl by rememberSaveable(initialDraft) { mutableStateOf(initialDraft.spotifyUrl) }
-    var trackId by rememberSaveable(initialDraft) { mutableStateOf(initialDraft.spotifyTrackId) }
-    val isComplete = title.isNotBlank() && artist.isNotBlank() &&
-        spotifyUrl.isNotBlank() && trackId.isNotBlank()
+    val draft = state.draft
+    val isLocked = state.isSubmitting || state.submissionResult is AirtableTrackSubmissionResult.Added
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -68,25 +65,46 @@ fun SharePreviewScreen(
         ) {
             ShareHeader(onBack)
             PreviewCard(
-                title = title,
-                artist = artist,
-                spotifyUrl = spotifyUrl,
-                trackId = trackId,
-                isComplete = isComplete,
-                onTitleChange = { title = it },
-                onArtistChange = { artist = it },
-                onSpotifyUrlChange = { spotifyUrl = it },
-                onTrackIdChange = { trackId = it },
-                enabled = !isMetadataLoading,
+                title = draft.title,
+                artist = draft.artist,
+                spotifyUrl = draft.spotifyUrl,
+                trackId = draft.spotifyTrackId,
+                isComplete = draft.isReadyForAirtable,
+                onTitleChange = { value -> onDraftChange { it.copy(title = value) } },
+                onArtistChange = { value -> onDraftChange { it.copy(artist = value) } },
+                onSpotifyUrlChange = { value -> onDraftChange { it.copy(spotifyUrl = value) } },
+                onTrackIdChange = { value ->
+                    onDraftChange { it.copy(spotifyTrackId = value) }
+                },
+                enabled = !isMetadataLoading && !isLocked,
             )
             initialMessage?.let {
                 ShareMessage(message = it, isError = isInitialError)
             }
-            Text(
-                text = "Aucun morceau n’est envoyé automatiquement. La création Airtable sera ajoutée en P3.",
-                style = MaterialTheme.typography.labelMedium,
-                color = RekordbotMutedText,
+            state.submissionResult?.let { SubmissionMessage(it) }
+            if (!state.isConfigurationLoading && !state.isAirtableConfigured) {
+                ShareMessage(
+                    message = "Configure et teste Airtable depuis l’accueil avant l’envoi.",
+                    isError = true,
+                )
+            }
+            RekordbotPrimaryButton(
+                label = when {
+                    state.submissionResult is AirtableTrackSubmissionResult.Added -> "Ajouté à Airtable"
+                    state.isSubmitting -> "Ajout en cours…"
+                    else -> "Ajouter à Airtable"
+                },
+                onClick = onSubmit,
+                enabled = draft.isReadyForAirtable && state.isAirtableConfigured && !isLocked,
+                modifier = Modifier.fillMaxWidth(),
             )
+            if (state.submissionResult is AirtableTrackSubmissionResult.Deferred) {
+                Text(
+                    text = "P4 ajoutera la file hors-ligne persistante. Pour l’instant, réessaie avant de fermer cet écran.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = RekordbotMutedText,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
@@ -197,19 +215,51 @@ private fun ShareMessage(message: String, isError: Boolean) {
     }
 }
 
+@Composable
+private fun SubmissionMessage(result: AirtableTrackSubmissionResult) {
+    val (message, accent) = when (result) {
+        is AirtableTrackSubmissionResult.Added ->
+            "Morceau ajouté à Airtable · ${result.recordId}" to RekordbotSuccess
+        is AirtableTrackSubmissionResult.DuplicateBlocked ->
+            "Doublon bloqué : ce Track ID existe déjà · ${result.recordId}" to RekordbotWarning
+        is AirtableTrackSubmissionResult.Failed -> result.message to RekordbotError
+        is AirtableTrackSubmissionResult.Deferred ->
+            "Envoi différé — non enregistré localement. ${result.reason}" to RekordbotWarning
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = accent.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.5f)),
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(14.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = accent,
+        )
+    }
+}
+
 @Preview(showBackground = true, backgroundColor = 0xFF111318)
 @Composable
 private fun SharePreviewScreenPreview() {
     RekordbotTheme {
         SharePreviewScreen(
-            initialDraft = TrackDraft(
-                spotifyTrackId = "5lFNqg3eMNMuJsnFRKB460",
-                title = "Open Eye Signal",
-                artist = "Jon Hopkins",
-                spotifyUrl = "https://open.spotify.com/track/5lFNqg3eMNMuJsnFRKB460",
+            state = SharePreviewUiState(
+                draft = TrackDraft(
+                    spotifyTrackId = "5lFNqg3eMNMuJsnFRKB460",
+                    title = "Open Eye Signal",
+                    artist = "Jon Hopkins",
+                    spotifyUrl = "https://open.spotify.com/track/5lFNqg3eMNMuJsnFRKB460",
+                ),
+                isConfigurationLoading = false,
+                isAirtableConfigured = true,
             ),
             initialMessage = null,
             isInitialError = false,
+            onDraftChange = {},
+            onSubmit = {},
             onBack = {},
         )
     }

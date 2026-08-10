@@ -3,6 +3,7 @@ package com.loe159.rekordbot.mobile.data.local
 import android.content.Context
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.AirtableFieldMappings
+import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +42,14 @@ class SharedPreferencesAirtableConfigurationRepository(
             ),
             defaultStatus = preferences.getString(KEY_DEFAULT_STATUS, "À qualifier").orEmpty(),
             defaultSource = preferences.getString(KEY_DEFAULT_SOURCE, "Spotify").orEmpty(),
+            duplicateStrategy = preferences.getString(
+                KEY_DUPLICATE_STRATEGY,
+                DuplicateStrategy.BLOCK.name,
+            )
+                ?.let { stored ->
+                    DuplicateStrategy.entries.firstOrNull { it.name == stored }
+                }
+                ?: DuplicateStrategy.BLOCK,
         )
     }
 
@@ -63,6 +72,7 @@ class SharedPreferencesAirtableConfigurationRepository(
             .putString(KEY_FIELD_SOURCE, configuration.fields.source.trim())
             .putString(KEY_DEFAULT_STATUS, configuration.defaultStatus.trim())
             .putString(KEY_DEFAULT_SOURCE, configuration.defaultSource.trim())
+            .putString(KEY_DUPLICATE_STRATEGY, configuration.duplicateStrategy.name)
             .putBoolean(KEY_CONNECTION_VALIDATED, false)
             .commit()
         Unit
@@ -95,6 +105,7 @@ class SharedPreferencesAirtableConfigurationRepository(
         const val KEY_FIELD_SOURCE = "field_source"
         const val KEY_DEFAULT_STATUS = "default_status"
         const val KEY_DEFAULT_SOURCE = "default_source"
+        const val KEY_DUPLICATE_STRATEGY = "duplicate_strategy"
         const val KEY_CONNECTION_VALIDATED = "connection_validated"
     }
 }

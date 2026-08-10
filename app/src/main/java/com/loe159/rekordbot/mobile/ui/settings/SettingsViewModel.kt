@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
+import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +51,17 @@ class SettingsViewModel(
         mutableState.update { current ->
             current.copy(
                 configuration = current.configuration.withField(field, value),
+                isConnectionValidated = false,
+                message = null,
+                isError = false,
+            )
+        }
+    }
+
+    fun updateDuplicateStrategy(strategy: DuplicateStrategy) {
+        mutableState.update { current ->
+            current.copy(
+                configuration = current.configuration.copy(duplicateStrategy = strategy),
                 isConnectionValidated = false,
                 message = null,
                 isError = false,

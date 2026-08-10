@@ -159,7 +159,7 @@ private fun WorkflowOverview() {
             fontWeight = FontWeight.Bold,
         )
         WorkflowStep(index = "01", title = "Spotify", description = "Partager et vérifier le morceau")
-        WorkflowStep(index = "02", title = "Airtable", description = "Envoi direct prévu en P3")
+        WorkflowStep(index = "02", title = "Airtable", description = "Envoi direct et doublons contrôlés")
         WorkflowStep(index = "03", title = "Rekordbot PC", description = "Synchroniser vers Rekordbox")
     }
 }

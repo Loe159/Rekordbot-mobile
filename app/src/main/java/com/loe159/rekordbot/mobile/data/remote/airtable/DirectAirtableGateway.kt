@@ -4,6 +4,7 @@ import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.model.AirtableFieldSchema
 import com.loe159.rekordbot.mobile.domain.model.AirtableTableSchema
+import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
@@ -61,6 +62,48 @@ class DirectAirtableGateway(
             )
             JSONObject(response).getJSONArray("records").getJSONObject(0).getString("id")
         }
+    }
+
+    override suspend fun findRecordBySpotifyTrackId(
+        configuration: AirtableConfiguration,
+        spotifyTrackId: String,
+    ): Result<String?> = runCatching {
+        val formula = AirtableFormula.textEquals(
+            configuration.fields.spotifyTrackId.trim(),
+            spotifyTrackId.trim(),
+        )
+        val response = request(
+            method = "GET",
+            url = buildString {
+                append(apiBaseUrl)
+                append('/')
+                append(encodePathSegment(configuration.baseId.trim()))
+                append('/')
+                append(encodePathSegment(configuration.table.trim()))
+                append("?maxRecords=1&filterByFormula=")
+                append(encodeQueryParameter(formula))
+            },
+            token = configuration.personalAccessToken,
+        )
+        val records = JSONObject(response).getJSONArray("records")
+        if (records.length() == 0) null else records.getJSONObject(0).getString("id")
+    }
+
+    override suspend fun createTrackRecord(
+        configuration: AirtableConfiguration,
+        track: TrackDraft,
+    ): Result<String> = runCatching {
+        val fields = JSONObject(AirtableRecordMapper.fields(configuration, track))
+        val body = JSONObject()
+            .put("records", org.json.JSONArray().put(JSONObject().put("fields", fields)))
+            .toString()
+        val response = request(
+            method = "POST",
+            url = "$apiBaseUrl/${encodePathSegment(configuration.baseId.trim())}/${encodePathSegment(configuration.table.trim())}",
+            token = configuration.personalAccessToken,
+            body = body,
+        )
+        JSONObject(response).getJSONArray("records").getJSONObject(0).getString("id")
     }
 
     private suspend fun request(
@@ -149,7 +192,7 @@ class DirectAirtableGateway(
             HttpURLConnection.HTTP_UNAUTHORIZED ->
                 "Token Airtable invalide ou révoqué."
             HttpURLConnection.HTTP_FORBIDDEN ->
-                "Accès refusé. Vérifie l’accès du token à la base et les droits schema.bases:read / data.records:write."
+                "Accès refusé. Vérifie l’accès du token à la base et les droits schema.bases:read / data.records:read / data.records:write."
             HttpURLConnection.HTTP_NOT_FOUND ->
                 "Base Airtable introuvable ou inaccessible. Vérifie le Base ID et les ressources du token."
             422 -> airtableDetail.ifBlank {
@@ -161,6 +204,10 @@ class DirectAirtableGateway(
     }
 
     private fun encodePathSegment(value: String): String = URLEncoder
+        .encode(value, StandardCharsets.UTF_8.toString())
+        .replace("+", "%20")
+
+    private fun encodeQueryParameter(value: String): String = URLEncoder
         .encode(value, StandardCharsets.UTF_8.toString())
         .replace("+", "%20")
 

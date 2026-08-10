@@ -7,7 +7,13 @@ data class AirtableConfiguration(
     val fields: AirtableFieldMappings = AirtableFieldMappings(),
     val defaultStatus: String = "À qualifier",
     val defaultSource: String = "Spotify",
+    val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.BLOCK,
 )
+
+enum class DuplicateStrategy {
+    BLOCK,
+    ALLOW,
+}
 
 data class AirtableFieldMappings(
     val title: String = "Titre",

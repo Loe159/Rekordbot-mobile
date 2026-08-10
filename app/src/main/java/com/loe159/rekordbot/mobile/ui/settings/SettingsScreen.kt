@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
+import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
 import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
@@ -68,6 +70,7 @@ fun SettingsRoute(
         state = state,
         onBack = onBack,
         onFieldChange = viewModel::updateField,
+        onDuplicateStrategyChange = viewModel::updateDuplicateStrategy,
         onSave = viewModel::save,
         onTestConnection = viewModel::testConnection,
         onCreateDemoRecord = viewModel::createDemoRecord,
@@ -79,6 +82,7 @@ fun SettingsScreen(
     state: SettingsUiState,
     onBack: () -> Unit,
     onFieldChange: (SettingsField, String) -> Unit,
+    onDuplicateStrategyChange: (DuplicateStrategy) -> Unit,
     onSave: () -> Unit,
     onTestConnection: () -> Unit,
     onCreateDemoRecord: () -> Unit,
@@ -112,6 +116,10 @@ fun SettingsScreen(
                 AccessSection(state.configuration, onFieldChange)
                 FieldMappingsSection(state.configuration, onFieldChange)
                 DefaultsSection(state.configuration, onFieldChange)
+                DuplicateStrategySection(
+                    configuration = state.configuration,
+                    onStrategyChange = onDuplicateStrategyChange,
+                )
 
                 state.message?.let {
                     SettingsMessage(message = it, isError = state.isError)
@@ -178,6 +186,33 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun DuplicateStrategySection(
+    configuration: AirtableConfiguration,
+    onStrategyChange: (DuplicateStrategy) -> Unit,
+) {
+    SettingsSection(
+        title = "Doublons Spotify",
+        description = "La détection compare le Spotify Track ID avant chaque création.",
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            FilterChip(
+                selected = configuration.duplicateStrategy == DuplicateStrategy.BLOCK,
+                onClick = { onStrategyChange(DuplicateStrategy.BLOCK) },
+                label = { Text("Bloquer") },
+            )
+            FilterChip(
+                selected = configuration.duplicateStrategy == DuplicateStrategy.ALLOW,
+                onClick = { onStrategyChange(DuplicateStrategy.ALLOW) },
+                label = { Text("Autoriser") },
+            )
+        }
+    }
+}
+
+@Composable
 private fun SettingsHeader(onBack: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -209,7 +244,7 @@ private fun AccessSection(
 ) {
     SettingsSection(
         title = "Accès",
-        description = "PAT requis : schema.bases:read et data.records:write, limité à ta base.",
+        description = "PAT requis : schema.bases:read, data.records:read et data.records:write, limité à ta base.",
     ) {
         SettingsTextField(
             label = "Personal Access Token",
@@ -391,6 +426,7 @@ private fun SettingsScreenPreview() {
             state = SettingsUiState(isLoading = false),
             onBack = {},
             onFieldChange = { _, _ -> },
+            onDuplicateStrategyChange = {},
             onSave = {},
             onTestConnection = {},
             onCreateDemoRecord = {},

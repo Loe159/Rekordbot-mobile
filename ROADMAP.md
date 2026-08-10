@@ -82,7 +82,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Terminé quand** : depuis Spotify, `Partager → Rekordbot` ouvre correctement le morceau dans l’application.
 
-### P3 — Ajout Airtable immédiat
+### P3 — Ajout Airtable immédiat ✅
 
 - Créer l’enregistrement Airtable depuis l’aperçu.
 - Renseigner au minimum titre, artiste, lien Spotify, Track ID, source et statut.
@@ -90,6 +90,8 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 - Détecter les doublons à partir du Spotify Track ID avant création, selon une stratégie configurable : bloquer ou autoriser.
 
 **Terminé quand** : un partage Spotify crée directement une entrée exploitable par Rekordbot PC.
+
+**Livré** : création directe avec mapping configurable, détection par Spotify Track ID, stratégie bloquer/autoriser et états ajouté/échec/différé. L’état différé de P3 est explicitement non persistant ; la persistance démarre en P4.
 
 ### P4 — Mode hors-ligne fiable
 

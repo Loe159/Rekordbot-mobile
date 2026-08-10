@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-> État actuel : **P2 — partage Spotify**. L’ajout direct dans Airtable arrive en P3 dans la [roadmap](ROADMAP.md).
+> État actuel : **P3 — ajout Airtable immédiat**. Le mode hors-ligne persistant arrive en P4 dans la [roadmap](ROADMAP.md).
 
 ## Stack
 
@@ -18,7 +18,7 @@ Application Android autonome pour capturer un morceau partagé depuis Spotify, l
 app/src/main/java/com/loe159/rekordbot/mobile/
 ├── data/
 │   ├── local/                 # Persistance locale, Room prévu en P4
-│   └── remote/airtable/       # Accès direct à Airtable prévu en P1/P3
+│   └── remote/airtable/       # Schéma, doublons et création directe Airtable
 ├── domain/
 │   ├── model/                 # Modèles métier indépendants de l’UI
 │   ├── spotify/               # Parsing des liens, URI et métadonnées partagées
@@ -36,7 +36,7 @@ L’application appelle directement l’API Airtable, sans dépendance à un PC 
 
 Dans l’application, ouvrir **Configurer Airtable**, puis renseigner :
 
-1. un Personal Access Token limité à la base cible avec les droits `schema.bases:read` et `data.records:write` ;
+1. un Personal Access Token limité à la base cible avec les droits `schema.bases:read`, `data.records:read` et `data.records:write` ;
 2. le Base ID (`app…`) et le nom ou l’ID de la table (`tbl…`) ;
 3. les noms exacts des champs Airtable et les valeurs par défaut.
 
@@ -44,7 +44,9 @@ Les champs optionnels absents de la table peuvent être laissés vides. **Tester
 
 ## Partager depuis Spotify
 
-Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau. En cas d’indisponibilité réseau, les champs restent modifiables manuellement. Aucun enregistrement Airtable n’est encore créé automatiquement en P2.
+Depuis un morceau Spotify, ouvrir **Partager → Plus → Rekordbot**. L’application reconnaît les liens `open.spotify.com/track/...` et les URI `spotify:track:...`, puis affiche un aperçu modifiable du titre, de l’artiste, du lien et du Track ID. Si Spotify ne transmet que le lien, l’application récupère le titre et l’artiste depuis la page publique du morceau.
+
+Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source et le statut par défaut. La stratégie de doublons se règle dans **Doublons Spotify** : elle peut bloquer un Track ID déjà présent ou autoriser sa création. L’écran distingue un ajout réussi, un doublon bloqué, une erreur définitive et un envoi différé. En P3, un envoi différé n’est pas encore sauvegardé localement : il faut réessayer avant de fermer l’écran ; la file persistante Room/WorkManager est prévue en P4.
 
 ## Lancer le projet
 
