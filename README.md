@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-> État actuel : **P0 — socle Android**. La connexion Airtable et le partage Spotify arrivent dans les phases suivantes de la [roadmap](ROADMAP.md).
+> État actuel : **P1 — configuration Airtable**. Le partage Spotify arrive en P2 dans la [roadmap](ROADMAP.md).
 
 ## Stack
 
@@ -28,7 +28,17 @@ app/src/main/java/com/loe159/rekordbot/mobile/
     └── theme/                 # Couleurs, typographie, formes et thème
 ```
 
-Les couches Airtable et locale sont définies par des interfaces. Elles seront implémentées sans dépendance à un PC ni API intermédiaire.
+L’application appelle directement l’API Airtable, sans dépendance à un PC ni API intermédiaire. Le Personal Access Token est chiffré en AES-GCM avec une clé conservée dans l’Android Keystore ; les sauvegardes Android de l’application sont désactivées pour ne pas exporter sa configuration.
+
+## Configurer Airtable
+
+Dans l’application, ouvrir **Configurer Airtable**, puis renseigner :
+
+1. un Personal Access Token limité à la base cible avec les droits `schema.bases:read` et `data.records:write` ;
+2. le Base ID (`app…`) et le nom ou l’ID de la table (`tbl…`) ;
+3. les noms exacts des champs Airtable et les valeurs par défaut.
+
+Les champs optionnels absents de la table peuvent être laissés vides. **Tester la connexion** lit le schéma de la vraie table, vérifie chaque champ configuré et enregistre la configuration si elle est valide. La création d’un enregistrement de démonstration demande ensuite une confirmation explicite.
 
 ## Lancer le projet
 
@@ -51,4 +61,3 @@ La CI exécute les mêmes contrôles à chaque push et pull request.
 ## Configuration locale
 
 Ne jamais commiter de token Airtable ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés.
-

@@ -32,10 +32,13 @@ import com.loe159.rekordbot.mobile.ui.theme.RekordbotPrimary
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotTheme
 
 @Composable
-fun HomeRoute() {
+fun HomeRoute(
+    isAirtableConfigured: Boolean,
+    onConfigureAirtable: () -> Unit,
+) {
     HomeScreen(
-        state = HomeUiState(),
-        onConfigureAirtable = {},
+        state = HomeUiState(isAirtableConfigured = isAirtableConfigured),
+        onConfigureAirtable = onConfigureAirtable,
     )
 }
 
@@ -82,7 +85,7 @@ private fun Header() {
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            text = "Le socle Android est prêt pour accueillir la connexion Airtable et le partage Spotify.",
+            text = "Configure Airtable maintenant, puis le partage Spotify arrivera à l’étape suivante.",
             style = MaterialTheme.typography.bodyMedium,
             color = RekordbotMutedText,
         )
@@ -112,7 +115,7 @@ private fun FoundationCard(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Socle Android",
+                        text = "Connexion Airtable",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -123,19 +126,22 @@ private fun FoundationCard(
                     )
                 }
                 RekordbotStatusBadge(
-                    label = if (isAirtableConfigured) "Configuré" else "P0 prêt",
-                    isPositive = true,
+                    label = if (isAirtableConfigured) "Connecté" else "À configurer",
+                    isPositive = isAirtableConfigured,
                 )
             }
 
             RekordbotPrimaryButton(
                 label = "Configurer Airtable",
                 onClick = onConfigureAirtable,
-                enabled = false,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                text = "La configuration sera activée en P1.",
+                text = if (isAirtableConfigured) {
+                    "La connexion a été validée. Tu peux modifier ou retester les réglages."
+                } else {
+                    "Ajoute ton token, ta base, ta table et les noms de champs."
+                },
                 style = MaterialTheme.typography.labelMedium,
                 color = RekordbotMutedText,
             )
@@ -214,4 +220,3 @@ private fun HomeScreenPreview() {
         )
     }
 }
-
