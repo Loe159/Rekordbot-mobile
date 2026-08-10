@@ -26,7 +26,7 @@ enum class SpotifyShareIssue {
     MISSING_ARTIST,
 }
 
-private fun TrackDraft.metadataIssue(): SpotifyShareIssue? = when {
+internal fun TrackDraft.metadataIssue(): SpotifyShareIssue? = when {
     title.isBlank() && artist.isBlank() -> SpotifyShareIssue.MISSING_TITLE_AND_ARTIST
     title.isBlank() -> SpotifyShareIssue.MISSING_TITLE
     artist.isBlank() -> SpotifyShareIssue.MISSING_ARTIST
