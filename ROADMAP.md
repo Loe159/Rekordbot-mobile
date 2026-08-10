@@ -20,6 +20,16 @@ L’application ne dépend ni du PC ni d’une API intermédiaire : elle appelle
 - Le genre Soundcharts reste une valeur brute dans un champ Airtable texte libre, sans mapping vers une liste fermée.
 - L’échange avec le Rekordbot PC passe uniquement par Airtable. La première intégration Rekordbox reste l’export XML ; l’écriture directe de la base Rekordbox n’est pas dans ce périmètre.
 
+## Direction visuelle
+
+Rekordbot Mobile s’inspire de l’ergonomie des logiciels DJ professionnels, notamment l’ambiance sombre et les repères bleus de Rekordbox, tout en conservant une identité propre. Aucun logo, icône ou écran de Rekordbox n’est reproduit.
+
+- Thème sombre uniquement au lancement : fond `#111318`, surfaces `#1B1F27` et bordures discrètes.
+- Bleu électrique `#168BFF` pour l’action principale, les éléments sélectionnés et les indicateurs de progression ; le bleu n’est jamais le seul moyen de transmettre une information.
+- Composants compacts et lisibles : listes de titres, cartes de préparation sobres, champs peu encombrants, tags colorés et valeurs d’énergie immédiatement repérables.
+- Hiérarchie orientée usage DJ : titre et artiste d’abord, puis statut d’envoi, métadonnées et actions secondaires.
+- Les couleurs, espacements, rayons, typographies et états interactifs sont centralisés dans un design system Compose ; le contraste reste accessible, y compris en plein soleil.
+
 ## Données Airtable
 
 La première configuration permet de renseigner le Base ID, la table et le nom de chaque champ. Les champs visés sont :
@@ -47,6 +57,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 - Initialiser un projet Android Kotlin / Jetpack Compose.
 - Ajouter une architecture claire : UI Compose, logique métier, accès Airtable, persistance locale.
+- Définir le design system sombre : palette sémantique, typographie, composants, états et prévisualisations Compose.
 - Prévoir les variantes debug/release et ignorer les fichiers de secrets/configuration locale.
 - Ajouter un contrôle qualité minimal : formatage, tests unitaires et build APK de debug.
 
@@ -92,7 +103,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 ### P5 — Saisie DJ rapide
 
 - Ajouter une saisie facultative d’énergie, mood, situation, DJs inspirants et commentaire avant envoi ou depuis la file.
-- Utiliser les valeurs déjà employées dans Airtable, avec des raccourcis adaptés au téléphone.
+- Utiliser les valeurs déjà employées dans Airtable, avec des raccourcis adaptés au téléphone et des tags colorés cohérents avec le design system.
 - Ajouter un brouillon local pour compléter un titre plus tard.
 - Préparer l’extension de note vocale et sa transcription, sans la rendre bloquante pour le MVP.
 
@@ -119,6 +130,7 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 ### P8 — Finition et publication
 
 - Ajouter icône, nom, écran d’accueil et messages d’erreur soignés.
+- Vérifier le rendu du thème sombre et la lisibilité des actions bleues sur un appareil réel, y compris en extérieur.
 - Tester le flux complet sur Spotify Android et sur un réseau intermittent.
 - Produire un APK de test puis une release signée.
 - Rédiger un guide court de configuration Airtable et de dépannage.
