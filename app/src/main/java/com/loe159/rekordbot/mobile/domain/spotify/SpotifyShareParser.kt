@@ -84,13 +84,6 @@ object SpotifyShareParser {
         return split.takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() }
     }
 
-    private fun TrackDraft.metadataIssue(): SpotifyShareIssue? = when {
-        title.isBlank() && artist.isBlank() -> SpotifyShareIssue.MISSING_TITLE_AND_ARTIST
-        title.isBlank() -> SpotifyShareIssue.MISSING_TITLE
-        artist.isBlank() -> SpotifyShareIssue.MISSING_ARTIST
-        else -> null
-    }
-
     private fun emptyResult(issue: SpotifyShareIssue) = SpotifyShareParseResult(
         draft = TrackDraft(
             spotifyTrackId = "",

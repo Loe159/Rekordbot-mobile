@@ -50,6 +50,40 @@ class SpotifyShareParserTest {
     }
 
     @Test
+    fun `fills missing metadata without replacing shared values`() {
+        val parsed = SpotifyShareParser.parse(
+            sharedText = "Open Eye Signal by Jon Hopkins https://open.spotify.com/track/$trackId",
+        )
+
+        val enriched = parsed.withMetadata(
+            SpotifyTrackMetadata(
+                title = "Wrong title",
+                artist = "Wrong artist",
+            ),
+        )
+
+        assertEquals("Open Eye Signal", enriched.draft.title)
+        assertEquals("Jon Hopkins", enriched.draft.artist)
+        assertNull(enriched.issue)
+    }
+
+    @Test
+    fun `fills title and artist when Spotify shares only a link`() {
+        val parsed = SpotifyShareParser.parse("https://open.spotify.com/track/$trackId")
+
+        val enriched = parsed.withMetadata(
+            SpotifyTrackMetadata(
+                title = "Open Eye Signal - under the fabric",
+                artist = "Jon Hopkins",
+            ),
+        )
+
+        assertEquals("Open Eye Signal - under the fabric", enriched.draft.title)
+        assertEquals("Jon Hopkins", enriched.draft.artist)
+        assertNull(enriched.issue)
+    }
+
+    @Test
     fun `rejects non-track Spotify links`() {
         val result = SpotifyShareParser.parse("https://open.spotify.com/album/123")
 

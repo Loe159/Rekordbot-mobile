@@ -43,6 +43,7 @@ fun SharePreviewScreen(
     initialDraft: TrackDraft,
     initialMessage: String?,
     isInitialError: Boolean,
+    isMetadataLoading: Boolean = false,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,6 +77,7 @@ fun SharePreviewScreen(
                 onArtistChange = { artist = it },
                 onSpotifyUrlChange = { spotifyUrl = it },
                 onTrackIdChange = { trackId = it },
+                enabled = !isMetadataLoading,
             )
             initialMessage?.let {
                 ShareMessage(message = it, isError = isInitialError)
@@ -124,6 +126,7 @@ private fun PreviewCard(
     onArtistChange: (String) -> Unit,
     onSpotifyUrlChange: (String) -> Unit,
     onTrackIdChange: (String) -> Unit,
+    enabled: Boolean,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -150,10 +153,10 @@ private fun PreviewCard(
                     isPositive = isComplete,
                 )
             }
-            PreviewTextField("Titre", title, onTitleChange)
-            PreviewTextField("Artiste", artist, onArtistChange)
-            PreviewTextField("Lien Spotify", spotifyUrl, onSpotifyUrlChange)
-            PreviewTextField("Spotify Track ID", trackId, onTrackIdChange)
+            PreviewTextField("Titre", title, onTitleChange, enabled)
+            PreviewTextField("Artiste", artist, onArtistChange, enabled)
+            PreviewTextField("Lien Spotify", spotifyUrl, onSpotifyUrlChange, enabled)
+            PreviewTextField("Spotify Track ID", trackId, onTrackIdChange, enabled)
         }
     }
 }
@@ -163,6 +166,7 @@ private fun PreviewTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
+    enabled: Boolean,
 ) {
     OutlinedTextField(
         value = value,
@@ -171,6 +175,7 @@ private fun PreviewTextField(
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         shape = MaterialTheme.shapes.medium,
+        enabled = enabled,
     )
 }
 
