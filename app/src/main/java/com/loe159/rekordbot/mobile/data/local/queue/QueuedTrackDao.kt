@@ -69,7 +69,8 @@ interface QueuedTrackDao {
 
     @Query(
         "UPDATE queued_tracks SET spotifyTrackId = :spotifyTrackId, title = :title, " +
-            "artist = :artist, spotifyUrl = :spotifyUrl, rawGenre = :rawGenre, " +
+            "artist = :artist, spotifyUrl = :spotifyUrl, source = :source, " +
+            "rawGenre = :rawGenre, " +
             "isrc = :isrc, " +
             "energy = :energy, moods = :moods, situations = :situations, " +
             "inspirationalDjs = :inspirationalDjs, comment = :comment, updatedAt = :now " +
@@ -81,6 +82,7 @@ interface QueuedTrackDao {
         title: String,
         artist: String,
         spotifyUrl: String,
+        source: String?,
         isrc: String?,
         rawGenre: String?,
         energy: Int?,

@@ -18,12 +18,18 @@ class HomeScreenTest {
     fun primaryActionsAreVisibleAndClickable() {
         var configurationOpened = false
         var queueOpened = false
+        var shazamOpened = false
         composeRule.setContent {
             RekordbotTheme {
                 HomeScreen(
-                    state = HomeUiState(isAirtableConfigured = true, pendingTracks = 2),
+                    state = HomeUiState(
+                        isAirtableConfigured = true,
+                        pendingTracks = 2,
+                        pendingShazams = 3,
+                    ),
                     onConfigureAirtable = { configurationOpened = true },
                     onOpenQueue = { queueOpened = true },
+                    onOpenShazam = { shazamOpened = true },
                 )
             }
         }
@@ -36,10 +42,15 @@ class HomeScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
             .performClick()
+        composeRule.onNodeWithText("Ouvrir Shazam · 3")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
 
         composeRule.runOnIdle {
             assertTrue(queueOpened)
             assertTrue(configurationOpened)
+            assertTrue(shazamOpened)
         }
     }
 }

@@ -15,16 +15,20 @@ import com.loe159.rekordbot.mobile.ui.RekordbotApp
 
 class MainActivity : ComponentActivity() {
     private var incomingShare by mutableStateOf<SpotifyShareParseResult?>(null)
+    private var spotifyAuthorizationCallback by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         incomingShare = intent.parseSpotifyShare()
+        spotifyAuthorizationCallback = intent.parseSpotifyAuthorizationCallback()
         enableEdgeToEdge()
         setContent {
             RekordbotApp(
                 incomingShare = incomingShare,
                 onShareClosed = ::clearIncomingShare,
+                spotifyAuthorizationCallback = spotifyAuthorizationCallback,
+                onSpotifyAuthorizationCallbackConsumed = ::clearSpotifyAuthorizationCallback,
             )
         }
     }
@@ -33,6 +37,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         incomingShare = intent.parseSpotifyShare()
+        spotifyAuthorizationCallback = intent.parseSpotifyAuthorizationCallback()
     }
 
     private fun Intent.parseSpotifyShare(): SpotifyShareParseResult? {
@@ -44,8 +49,24 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun Intent.parseSpotifyAuthorizationCallback(): String? {
+        if (action != Intent.ACTION_VIEW) return null
+        val callback = data ?: return null
+        if (callback.scheme != "rekordbot-mobile-login" || callback.host != "callback") return null
+        return callback.toString()
+    }
+
     private fun clearIncomingShare() {
         incomingShare = null
+        setIntent(
+            Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+            },
+        )
+    }
+
+    private fun clearSpotifyAuthorizationCallback() {
+        spotifyAuthorizationCallback = null
         setIntent(
             Intent(this, MainActivity::class.java).apply {
                 action = Intent.ACTION_MAIN

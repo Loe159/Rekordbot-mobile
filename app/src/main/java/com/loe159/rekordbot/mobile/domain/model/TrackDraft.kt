@@ -5,6 +5,7 @@ data class TrackDraft(
     val title: String,
     val artist: String,
     val spotifyUrl: String,
+    val source: String? = null,
     val isrc: String? = null,
     val rawGenre: String? = null,
     val energy: Int? = null,

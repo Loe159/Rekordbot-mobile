@@ -40,16 +40,20 @@ import com.loe159.rekordbot.mobile.R
 fun HomeRoute(
     isAirtableConfigured: Boolean,
     pendingTracks: Int,
+    pendingShazams: Int = 0,
     onConfigureAirtable: () -> Unit,
     onOpenQueue: () -> Unit,
+    onOpenShazam: () -> Unit = {},
 ) {
     HomeScreen(
         state = HomeUiState(
             isAirtableConfigured = isAirtableConfigured,
             pendingTracks = pendingTracks,
+            pendingShazams = pendingShazams,
         ),
         onConfigureAirtable = onConfigureAirtable,
         onOpenQueue = onOpenQueue,
+        onOpenShazam = onOpenShazam,
     )
 }
 
@@ -58,6 +62,7 @@ fun HomeScreen(
     state: HomeUiState,
     onConfigureAirtable: () -> Unit,
     onOpenQueue: () -> Unit,
+    onOpenShazam: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -79,7 +84,49 @@ fun HomeScreen(
                 onConfigureAirtable = onConfigureAirtable,
                 onOpenQueue = onOpenQueue,
             )
+            ShazamInboxCard(
+                pendingShazams = state.pendingShazams,
+                onOpenShazam = onOpenShazam,
+            )
             WorkflowOverview()
+        }
+    }
+}
+
+@Composable
+private fun ShazamInboxCard(
+    pendingShazams: Int,
+    onOpenShazam: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, RekordbotBorder),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Boîte Shazam",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = if (pendingShazams == 1) {
+                    "1 morceau à décider"
+                } else {
+                    "$pendingShazams morceaux à décider"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = RekordbotMutedText,
+            )
+            RekordbotPrimaryButton(
+                label = "Ouvrir Shazam · $pendingShazams",
+                onClick = onOpenShazam,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

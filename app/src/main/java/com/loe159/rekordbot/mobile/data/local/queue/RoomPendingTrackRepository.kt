@@ -70,6 +70,7 @@ class RoomPendingTrackRepository(
             title = draft.title,
             artist = draft.artist,
             spotifyUrl = draft.spotifyUrl,
+            source = draft.source,
             isrc = draft.isrc,
             rawGenre = draft.rawGenre,
             energy = draft.energy,

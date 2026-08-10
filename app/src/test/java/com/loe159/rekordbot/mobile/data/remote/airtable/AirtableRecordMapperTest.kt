@@ -109,4 +109,20 @@ class AirtableRecordMapperTest {
         assertEquals("GB-CEL-21-00001", fields["ISRC"])
         assertEquals("Electronic, House, Afro House", fields["Genre brut"])
     }
+
+    @Test
+    fun `Shazam import overrides the configured default source`() {
+        val fields = AirtableRecordMapper.fields(
+            AirtableConfiguration(defaultSource = "Spotify"),
+            TrackDraft(
+                spotifyTrackId = "spotify-id",
+                title = "Title",
+                artist = "Artist",
+                spotifyUrl = "https://open.spotify.com/track/spotify-id",
+                source = "Shazam",
+            ),
+        )
+
+        assertEquals("Shazam", fields["Source"])
+    }
 }

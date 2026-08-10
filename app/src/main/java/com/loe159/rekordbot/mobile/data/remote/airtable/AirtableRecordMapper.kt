@@ -15,7 +15,10 @@ object AirtableRecordMapper {
         put(configuration.fields.status, configuration.defaultStatus.trim())
         putIfConfigured(configuration.fields.isrc, track.isrc)
         putIfConfigured(configuration.fields.rekordbotState, configuration.defaultRekordbotState)
-        putIfConfigured(configuration.fields.source, configuration.defaultSource)
+        putIfConfigured(
+            configuration.fields.source,
+            track.source?.takeIf(String::isNotBlank) ?: configuration.defaultSource,
+        )
         putIfConfigured(configuration.fields.rawGenre, track.rawGenre)
         putNumberIfConfigured(configuration.fields.energy, track.energy)
         putListIfConfigured(configuration.fields.mood, track.moods)

@@ -1,8 +1,8 @@
 # Rekordbot Mobile
 
-Application Android autonome pour capturer un morceau partagé depuis Spotify, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
+Application Android autonome pour capturer un morceau partagé depuis Spotify ou synchronisé depuis Shazam, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-Version actuelle : **1.0.0**.
+Version actuelle : **1.1.0**.
 
 > Le contrat P7 de synchronisation Mobile ↔ Airtable ↔ PC est documenté et versionné. Voir [docs/AIRTABLE_SYNC_CONTRACT.md](docs/AIRTABLE_SYNC_CONTRACT.md).
 
@@ -60,6 +60,16 @@ Le bouton **Ajouter à Airtable** renseigne les champs configurés, la source, l
 La **File d’attente** de l’accueil affiche les brouillons et les opérations en attente, en cours, envoyées ou en échec. Un brouillon reste modifiable, même incomplet, et n’entre dans la file d’envoi qu’après l’action **Envoyer**. Les opérations non envoyées permettent aussi de modifier la qualification DJ. Un échec peut être relancé ou supprimé. Les opérations interrompues sont récupérées au prochain démarrage ; avant toute nouvelle tentative incertaine, le Track ID Spotify est vérifié pour éviter une seconde création.
 
 Les valeurs exactes proposées sont centralisées dans `DjQualificationOptions` : moods `Sexy`, `Énergique`, `Sombre`, `Joyeux`, `Ambiant`, `Calme`, `Mystérieux`, `Triste`, situations du warm-up au B2B, et la liste de DJs inspirants utilisée dans Airtable. Leur orthographe peut ainsi évoluer à un seul endroit.
+
+## Synchroniser Shazam via Spotify
+
+La phase P9 ajoute une boîte de réception alimentée par la playlist Spotify `My Shazam Tracks` / `Mes titres Shazam`. La connexion utilise OAuth PKCE : aucun mot de passe Spotify ni client secret n’est stocké dans l’application. Le Client ID et l’URI de redirection proviennent d’une application créée dans Spotify Developer Dashboard ; les jetons sont chiffrés dans un coffre Android Keystore séparé.
+
+Chaque morceau synchronisé reste localement **À décider** jusqu’à une action explicite. **Préparer** ouvre l’éditeur de métadonnées existant et enverra ensuite la ligne Airtable avec `Source = Shazam`. **Ignorer** conserve la décision localement afin que le morceau ne revienne pas lors des synchronisations suivantes. L’application ne crée jamais automatiquement une ligne Airtable depuis la playlist.
+
+La synchronisation s’effectue à l’ouverture de la boîte Shazam, par actualisation manuelle et périodiquement sous les contraintes Android. La première lecture est paginée et importe l’historique disponible du plus récent au plus ancien.
+
+La création de l’application Spotify, la Redirect URI et le dépannage sont détaillés dans [docs/SPOTIFY_SHAZAM.md](docs/SPOTIFY_SHAZAM.md).
 
 ## Enrichissement Soundcharts optionnel
 

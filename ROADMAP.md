@@ -5,7 +5,7 @@
 Une application Android autonome permettant de capturer un titre depuis Spotify et de l’ajouter immédiatement à Airtable. Le Rekordbot PC synchronisera ensuite les entrées Airtable pour poursuivre la préparation et l’import dans Rekordbox.
 
 ```
-Spotify → Partager vers Rekordbot Mobile → Airtable → Rekordbot PC → Rekordbox
+Spotify / Shazam → Rekordbot Mobile → Airtable → Rekordbot PC → Rekordbox
 ```
 
 L’application ne dépend ni du PC ni d’une API intermédiaire : elle appelle Airtable directement.
@@ -152,6 +152,20 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : version 1.0.0, icônes adaptive/round/monochrome, splash Android, contraste des actions principales renforcé, accueil scrollable et retour système cohérent. Les erreurs inattendues ne révèlent plus leurs diagnostics bruts, les états chargement/action désactivée couvrent les parcours principaux et la CI valide lint, tests et assemblage en debug comme en release. La signature release est activée uniquement par un keystore externe stable, jamais commité ; la CI livre sinon un APK release explicitement non signé. Le guide `docs/RELEASE.md`, l’exemple de configuration et le changelog couvrent livraison et dépannage.
 
+### P9 — Boîte de réception Shazam 🚧
+
+- Connecter le compte Spotify avec OAuth Authorization Code + PKCE, sans client secret dans l’application.
+- Retrouver la playlist synchronisée par Shazam, `My Shazam Tracks` / `Mes titres Shazam`, avec un nom configurable en solution de repli.
+- Importer tous ses morceaux avec pagination, puis synchroniser les nouveautés au lancement, manuellement et périodiquement.
+- Afficher une boîte de réception triée du plus récent au plus ancien avec quatre décisions persistantes : `À décider`, `Enregistré`, `Ignoré`, `Déjà présent`.
+- Proposer **Préparer** pour ouvrir l’éditeur existant avec titre, artiste, lien, Spotify Track ID et ISRC préremplis.
+- Proposer **Ignorer** sans envoyer automatiquement le morceau vers Airtable, et permettre de consulter les morceaux ignorés.
+- Conserver les décisions lors des synchronisations suivantes : un morceau ignoré ou enregistré ne doit jamais réapparaître comme nouveau.
+- Utiliser le Spotify Track ID pour dédoublonner et envoyer les morceaux validés avec `Source = Shazam`.
+- Stocker les jetons Spotify dans un coffre Keystore distinct et renouveler l’accès via le refresh token.
+
+**Terminé quand** : un nouveau Shazam apparaît dans l’application sans créer d’entrée Airtable tant que l’utilisateur n’a pas choisi **Préparer**, et chaque décision reste stable après une nouvelle synchronisation.
+
 ## Ordre recommandé
 
 1. P0 — Socle
@@ -163,5 +177,6 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 7. P7 — Synchronisation PC
 8. P6 — Enrichissement
 9. P8 — Publication
+10. P9 — Boîte de réception Shazam
 
 Le premier livrable utile est donc : **Spotify → Partager → Rekordbot Mobile → aperçu → ajout direct dans Airtable**.

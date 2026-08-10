@@ -14,6 +14,12 @@ import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRep
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyMetadataGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTrackSubmissionResult
+
+enum class SharePreviewCompletion {
+    SAVED,
+    ALREADY_PRESENT,
+}
 
 @Composable
 fun SharePreviewRoute(
@@ -26,6 +32,7 @@ fun SharePreviewRoute(
     soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
     soundchartsGateway: SoundchartsGateway,
     onBack: () -> Unit,
+    onCompleted: (SharePreviewCompletion) -> Unit = {},
 ) {
     val needsMetadata = parseResult.draft.spotifyTrackId.isNotBlank() &&
         (parseResult.draft.title.isBlank() || parseResult.draft.artist.isBlank())
@@ -61,6 +68,20 @@ fun SharePreviewRoute(
 
     LaunchedEffect(resolvedResult.draft) {
         viewModel.applyEnrichedDraft(resolvedResult.draft)
+    }
+
+    val completion = when (val result = state.submissionResult) {
+        is AirtableTrackSubmissionResult.Added -> SharePreviewCompletion.SAVED
+        is AirtableTrackSubmissionResult.DuplicateBlocked ->
+            SharePreviewCompletion.ALREADY_PRESENT
+        is AirtableTrackSubmissionResult.Deferred ->
+            SharePreviewCompletion.SAVED.takeIf { result.isPersisted }
+        else -> SharePreviewCompletion.SAVED.takeIf {
+            state.savedDraftOperationId != null
+        }
+    }
+    LaunchedEffect(completion) {
+        completion?.let(onCompleted)
     }
 
     SharePreviewScreen(
