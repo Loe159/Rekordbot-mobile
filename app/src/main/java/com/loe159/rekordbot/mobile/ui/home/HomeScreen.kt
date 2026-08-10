@@ -85,7 +85,7 @@ private fun Header() {
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            text = "Configure Airtable maintenant, puis le partage Spotify arrivera à l’étape suivante.",
+            text = "Partage un morceau depuis Spotify pour vérifier ses métadonnées avant l’envoi Airtable.",
             style = MaterialTheme.typography.bodyMedium,
             color = RekordbotMutedText,
         )
@@ -158,8 +158,8 @@ private fun WorkflowOverview() {
             color = RekordbotMutedText,
             fontWeight = FontWeight.Bold,
         )
-        WorkflowStep(index = "01", title = "Spotify", description = "Partager un morceau")
-        WorkflowStep(index = "02", title = "Airtable", description = "Capturer et qualifier")
+        WorkflowStep(index = "01", title = "Spotify", description = "Partager et vérifier le morceau")
+        WorkflowStep(index = "02", title = "Airtable", description = "Envoi direct prévu en P3")
         WorkflowStep(index = "03", title = "Rekordbot PC", description = "Synchroniser vers Rekordbox")
     }
 }
