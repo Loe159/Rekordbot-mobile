@@ -11,6 +11,7 @@ enum class ShazamInboxTab {
 
 data class ShazamUiState(
     val clientId: String = "",
+    val isClientIdManagedByApp: Boolean = false,
     val playlistName: String = SpotifyConfiguration.DEFAULT_SHAZAM_PLAYLIST_NAME,
     val isConnected: Boolean = false,
     val hasPlaybackPermission: Boolean = false,

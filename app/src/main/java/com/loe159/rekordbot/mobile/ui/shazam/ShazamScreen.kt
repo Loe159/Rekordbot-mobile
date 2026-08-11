@@ -193,18 +193,24 @@ private fun SetupSection(
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = "Renseigne l’application Spotify qui donnera accès à ta playlist synchronisée par Shazam.",
+            text = if (state.isClientIdManagedByApp) {
+                "Connecte ton compte pour donner accès à la playlist synchronisée par Shazam."
+            } else {
+                "Build développeur : renseigne le Client ID Spotify avant la connexion."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = RekordbotMutedText,
         )
-        OutlinedTextField(
-            value = state.clientId,
-            onValueChange = onClientIdChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Client ID Spotify") },
-            singleLine = true,
-            enabled = !state.isBusy,
-        )
+        if (!state.isClientIdManagedByApp) {
+            OutlinedTextField(
+                value = state.clientId,
+                onValueChange = onClientIdChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Client ID Spotify (développeur)") },
+                singleLine = true,
+                enabled = !state.isBusy,
+            )
+        }
         OutlinedTextField(
             value = state.playlistName,
             onValueChange = onPlaylistNameChange,

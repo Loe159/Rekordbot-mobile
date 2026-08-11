@@ -35,6 +35,16 @@
                     android:host="callback"
                     android:scheme="rekordbot-mobile-login" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="airtable-callback"
+                    android:scheme="rekordbot-mobile-login" />
+            </intent-filter>
         </activity>
     </application>
 

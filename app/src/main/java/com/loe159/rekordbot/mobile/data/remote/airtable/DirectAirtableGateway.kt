@@ -1,6 +1,8 @@
 package com.loe159.rekordbot.mobile.data.remote.airtable
 
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableBaseSummary
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTableSummary
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.model.AirtableFieldSchema
 import com.loe159.rekordbot.mobile.domain.model.AirtableTableSchema
@@ -16,14 +18,16 @@ import kotlinx.coroutines.withContext
 
 class DirectAirtableGateway(
     private val apiBaseUrl: String = "https://api.airtable.com/v0",
-) : AirtableGateway {
+    private val tokenProvider: AirtableAccessTokenProvider = PersonalAccessTokenProvider,
+) : AirtableGateway, AirtableResourceGateway {
     override suspend fun fetchTableSchema(
         configuration: AirtableConfiguration,
     ): Result<AirtableTableSchema> = runCatching {
+        val accessToken = tokenProvider.accessToken(configuration)
         val response = request(
             method = "GET",
             url = "$apiBaseUrl/meta/bases/${encodePathSegment(configuration.baseId.trim())}/tables",
-            token = configuration.personalAccessToken,
+            token = accessToken,
         )
         parseTableSchema(response, configuration.table)
     }
@@ -38,6 +42,7 @@ class DirectAirtableGateway(
         }
 
         return runCatching {
+            val accessToken = tokenProvider.accessToken(configuration)
             val fields = JSONObject().apply {
                 put(configuration.fields.title, "Test Rekordbot Mobile")
                 put(configuration.fields.artist, "Connexion Airtable")
@@ -60,7 +65,7 @@ class DirectAirtableGateway(
             val response = request(
                 method = "POST",
                 url = "$apiBaseUrl/${encodePathSegment(configuration.baseId.trim())}/${encodePathSegment(schema.id)}",
-                token = configuration.personalAccessToken,
+                token = accessToken,
                 body = body,
             )
             JSONObject(response).getJSONArray("records").getJSONObject(0).getString("id")
@@ -71,6 +76,7 @@ class DirectAirtableGateway(
         configuration: AirtableConfiguration,
         spotifyTrackId: String,
     ): Result<String?> = runCatching {
+        val accessToken = tokenProvider.accessToken(configuration)
         val formula = AirtableFormula.textEquals(
             configuration.fields.spotifyTrackId.trim(),
             spotifyTrackId.trim(),
@@ -86,7 +92,7 @@ class DirectAirtableGateway(
                 append("?maxRecords=1&filterByFormula=")
                 append(encodeQueryParameter(formula))
             },
-            token = configuration.personalAccessToken,
+            token = accessToken,
         )
         val records = JSONObject(response).getJSONArray("records")
         if (records.length() == 0) null else records.getJSONObject(0).getString("id")
@@ -96,6 +102,7 @@ class DirectAirtableGateway(
         configuration: AirtableConfiguration,
         track: TrackDraft,
     ): Result<String> = runCatching {
+        val accessToken = tokenProvider.accessToken(configuration)
         val fields = JSONObject(AirtableRecordMapper.fields(configuration, track))
         val body = JSONObject()
             .put("records", org.json.JSONArray().put(JSONObject().put("fields", fields)))
@@ -103,10 +110,62 @@ class DirectAirtableGateway(
         val response = request(
             method = "POST",
             url = "$apiBaseUrl/${encodePathSegment(configuration.baseId.trim())}/${encodePathSegment(configuration.table.trim())}",
-            token = configuration.personalAccessToken,
+            token = accessToken,
             body = body,
         )
         JSONObject(response).getJSONArray("records").getJSONObject(0).getString("id")
+    }
+
+    override suspend fun listBases(
+        configuration: AirtableConfiguration,
+    ): Result<List<AirtableBaseSummary>> = runCatching {
+        val accessToken = tokenProvider.accessToken(configuration)
+        val bases = mutableListOf<AirtableBaseSummary>()
+        var offset: String? = null
+        do {
+            val response = request(
+                method = "GET",
+                url = buildString {
+                    append(apiBaseUrl)
+                    append("/meta/bases")
+                    offset?.let { append("?offset=").append(encodeQueryParameter(it)) }
+                },
+                token = accessToken,
+            )
+            val json = JSONObject(response)
+            val page = json.getJSONArray("bases")
+            for (index in 0 until page.length()) {
+                val base = page.getJSONObject(index)
+                bases += AirtableBaseSummary(
+                    id = base.getString("id"),
+                    name = base.getString("name"),
+                    permissionLevel = base.optString("permissionLevel")
+                        .trim()
+                        .takeIf(String::isNotBlank),
+                )
+            }
+            offset = json.optString("offset").trim().takeIf(String::isNotBlank)
+        } while (offset != null)
+        bases.sortedBy { it.name.lowercase() }
+    }
+
+    override suspend fun listTables(
+        configuration: AirtableConfiguration,
+        baseId: String,
+    ): Result<List<AirtableTableSummary>> = runCatching {
+        val accessToken = tokenProvider.accessToken(configuration)
+        val response = request(
+            method = "GET",
+            url = "$apiBaseUrl/meta/bases/${encodePathSegment(baseId.trim())}/tables",
+            token = accessToken,
+        )
+        val tables = JSONObject(response).getJSONArray("tables")
+        buildList {
+            for (index in 0 until tables.length()) {
+                val table = tables.getJSONObject(index)
+                add(AirtableTableSummary(table.getString("id"), table.getString("name")))
+            }
+        }.sortedBy { it.name.lowercase() }
     }
 
     private suspend fun request(
@@ -185,7 +244,7 @@ class DirectAirtableGateway(
         // Never surface the provider body: it can contain implementation details or identifiers.
         return when (statusCode) {
             HttpURLConnection.HTTP_UNAUTHORIZED ->
-                "Token Airtable invalide ou révoqué."
+                "Connexion Airtable expirée ou révoquée. Reconnecte le compte."
             HttpURLConnection.HTTP_FORBIDDEN ->
                 "Accès refusé. Vérifie l’accès du token à la base et les droits schema.bases:read / data.records:read / data.records:write."
             HttpURLConnection.HTTP_NOT_FOUND ->

@@ -23,6 +23,7 @@ fun ShazamRoute(
     inboxRepository: ShazamInboxRepository,
     synchronizer: ShazamPlaylistSynchronizer,
     playbackController: ShazamSpotifyPlaybackController,
+    bundledClientId: String,
     authorizationCallback: String?,
     onAuthorizationCallbackConsumed: () -> Unit,
     onConnectionAvailable: () -> Unit,
@@ -37,6 +38,7 @@ fun ShazamRoute(
             inboxRepository = inboxRepository,
             synchronizer = synchronizer,
             playbackController = playbackController,
+            bundledClientId = bundledClientId,
         ),
     )
     val state by viewModel.state.collectAsState()

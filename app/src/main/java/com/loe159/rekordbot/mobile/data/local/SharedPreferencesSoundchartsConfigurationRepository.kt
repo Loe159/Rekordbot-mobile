@@ -3,6 +3,7 @@ package com.loe159.rekordbot.mobile.data.local
 import android.content.Context
 import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsConfiguration
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsAccessMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -10,6 +11,7 @@ class SharedPreferencesSoundchartsConfigurationRepository(
     context: Context,
     private val credentialVault: AndroidKeystoreSoundchartsCredentialVault =
         AndroidKeystoreSoundchartsCredentialVault(context),
+    private val managedServiceAvailable: Boolean = false,
 ) : SoundchartsConfigurationRepository {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
@@ -19,6 +21,11 @@ class SharedPreferencesSoundchartsConfigurationRepository(
             enabled = preferences.getBoolean(KEY_ENABLED, false),
             appId = appId,
             apiKey = apiKey,
+            accessMode = if (managedServiceAvailable) {
+                SoundchartsAccessMode.MANAGED_SERVICE
+            } else {
+                SoundchartsAccessMode.LEGACY_CREDENTIALS
+            },
         )
     }
 

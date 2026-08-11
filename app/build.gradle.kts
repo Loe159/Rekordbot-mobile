@@ -33,6 +33,25 @@ check(releaseSigningValues.none { !it.isNullOrBlank() } || isReleaseSigningConfi
     "Release signing is incomplete: configure all four REKORDBOT signing values."
 }
 
+val publicConfigPropertiesFile = rootProject.file("secrets.properties")
+val publicConfigProperties = Properties().apply {
+    if (publicConfigPropertiesFile.isFile) {
+        publicConfigPropertiesFile.inputStream().use { input -> load(input) }
+    }
+}
+
+fun publicConfigValue(propertyName: String, environmentName: String): String =
+    publicConfigProperties.getProperty(propertyName)?.trim()?.takeIf(String::isNotBlank)
+        ?: System.getenv(environmentName)?.trim()?.takeIf(String::isNotBlank)
+        ?: ""
+
+fun quotedBuildConfigValue(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val spotifyClientId = publicConfigValue("spotifyClientId", "REKORDBOT_SPOTIFY_CLIENT_ID")
+val airtableClientId = publicConfigValue("airtableClientId", "REKORDBOT_AIRTABLE_CLIENT_ID")
+val publicApiBaseUrl = publicConfigValue("publicApiBaseUrl", "REKORDBOT_PUBLIC_API_BASE_URL")
+
 android {
     namespace = "com.loe159.rekordbot.mobile"
     compileSdk = 36
@@ -41,10 +60,13 @@ android {
         applicationId = "com.loe159.rekordbot.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.1.1"
+        versionCode = 5
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SPOTIFY_CLIENT_ID", quotedBuildConfigValue(spotifyClientId))
+        buildConfigField("String", "AIRTABLE_CLIENT_ID", quotedBuildConfigValue(airtableClientId))
+        buildConfigField("String", "PUBLIC_API_BASE_URL", quotedBuildConfigValue(publicApiBaseUrl))
     }
 
     signingConfigs {

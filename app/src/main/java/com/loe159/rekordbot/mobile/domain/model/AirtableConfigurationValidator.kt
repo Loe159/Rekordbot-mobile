@@ -2,7 +2,12 @@ package com.loe159.rekordbot.mobile.domain.model
 
 object AirtableConfigurationValidator {
     fun localErrors(configuration: AirtableConfiguration): List<String> = buildList {
-        if (configuration.personalAccessToken.isBlank()) add("Le token Airtable est obligatoire.")
+        if (
+            configuration.authenticationMode == AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN &&
+            configuration.personalAccessToken.isBlank()
+        ) {
+            add("Le token Airtable est obligatoire en mode avancé.")
+        }
         if (configuration.baseId.isBlank()) add("Le Base ID est obligatoire.")
         if (configuration.table.isBlank()) add("La table est obligatoire.")
         if (configuration.fields.title.isBlank()) add("Le champ Titre est obligatoire.")

@@ -1,5 +1,7 @@
 package com.loe159.rekordbot.mobile.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.stringResource
@@ -41,12 +45,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
+import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableResourceGateway
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableOAuthConfiguration
+import com.loe159.rekordbot.mobile.domain.model.AirtableAuthenticationMode
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.AirtableSessionRepository
 import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
+import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsAccessMode
 import com.loe159.rekordbot.mobile.ui.components.RekordbotPrimaryButton
+import com.loe159.rekordbot.mobile.ui.components.RekordbotStatusBadge
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotBorder
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotError
 import com.loe159.rekordbot.mobile.ui.theme.RekordbotMutedText
@@ -59,15 +69,24 @@ import com.loe159.rekordbot.mobile.R
 fun SettingsRoute(
     configurationRepository: AirtableConfigurationRepository,
     airtableGateway: AirtableGateway,
+    airtableResourceGateway: AirtableResourceGateway,
+    airtableSessionRepository: AirtableSessionRepository,
+    airtableOAuthConfiguration: AirtableOAuthConfiguration,
     soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
     soundchartsGateway: SoundchartsGateway,
+    authorizationCallback: String?,
+    onAuthorizationCallbackConsumed: () -> Unit,
     onBack: () -> Unit,
     onConfigurationSaved: () -> Unit,
 ) {
+    val context = LocalContext.current
     val viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.factory(
             configurationRepository,
             airtableGateway,
+            airtableResourceGateway,
+            airtableSessionRepository,
+            airtableOAuthConfiguration,
             soundchartsConfigurationRepository,
             soundchartsGateway,
         ),
@@ -78,11 +97,29 @@ fun SettingsRoute(
         if (state.savedVersion > 0) onConfigurationSaved()
     }
 
+    LaunchedEffect(authorizationCallback) {
+        authorizationCallback?.let {
+            viewModel.handleAirtableAuthorizationCallback(it)
+            onAuthorizationCallbackConsumed()
+        }
+    }
+
     SettingsScreen(
         state = state,
         onBack = onBack,
         onFieldChange = viewModel::updateField,
         onDuplicateStrategyChange = viewModel::updateDuplicateStrategy,
+        onConnectAirtable = {
+            viewModel.beginAirtableConnection { url ->
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+        },
+        onDisconnectAirtable = viewModel::disconnectAirtable,
+        onUseOAuthMode = viewModel::useOAuthMode,
+        onUsePersonalAccessTokenMode = viewModel::usePersonalAccessTokenMode,
+        onSelectBase = viewModel::selectAirtableBase,
+        onSelectTable = viewModel::selectAirtableTable,
+        onRefreshResources = viewModel::refreshAirtableResources,
         onSave = viewModel::save,
         onTestConnection = viewModel::testConnection,
         onCreateDemoRecord = viewModel::createDemoRecord,
@@ -100,6 +137,13 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onFieldChange: (SettingsField, String) -> Unit,
     onDuplicateStrategyChange: (DuplicateStrategy) -> Unit,
+    onConnectAirtable: () -> Unit,
+    onDisconnectAirtable: () -> Unit,
+    onUseOAuthMode: () -> Unit,
+    onUsePersonalAccessTokenMode: () -> Unit,
+    onSelectBase: (String) -> Unit,
+    onSelectTable: (String) -> Unit,
+    onRefreshResources: () -> Unit,
     onSave: () -> Unit,
     onTestConnection: () -> Unit,
     onCreateDemoRecord: () -> Unit,
@@ -135,7 +179,17 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 SettingsHeader(onBack = onBack)
-                AccessSection(state.configuration, onFieldChange)
+                AccessSection(
+                    state = state,
+                    onFieldChange = onFieldChange,
+                    onConnect = onConnectAirtable,
+                    onDisconnect = onDisconnectAirtable,
+                    onUseOAuthMode = onUseOAuthMode,
+                    onUsePersonalAccessTokenMode = onUsePersonalAccessTokenMode,
+                    onSelectBase = onSelectBase,
+                    onSelectTable = onSelectTable,
+                    onRefreshResources = onRefreshResources,
+                )
                 FieldMappingsSection(state.configuration, onFieldChange)
                 DefaultsSection(state.configuration, onFieldChange)
                 DuplicateStrategySection(
@@ -227,7 +281,11 @@ private fun SoundchartsSection(
     val configuration = state.soundchartsConfiguration
     SettingsSection(
         title = "Enrichissement Soundcharts",
-        description = "Optionnel. Utilise uniquement des identifiants legacy x-app-id / x-api-key existants.",
+        description = if (configuration.accessMode == SoundchartsAccessMode.MANAGED_SERVICE) {
+            "Optionnel. Les identifiants Soundcharts restent sur le service Rekordbot."
+        } else {
+            "Mode développeur : identifiants legacy x-app-id / x-api-key existants."
+        },
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -241,20 +299,22 @@ private fun SoundchartsSection(
                 enabled = !state.isSoundchartsBusy,
             )
         }
-        SettingsTextField(
-            label = "Soundcharts App ID",
-            value = configuration.appId,
-            onValueChange = onAppIdChange,
-            isSecret = true,
-            enabled = !state.isSoundchartsBusy,
-        )
-        SettingsTextField(
-            label = "Soundcharts API Key",
-            value = configuration.apiKey,
-            onValueChange = onApiKeyChange,
-            isSecret = true,
-            enabled = !state.isSoundchartsBusy,
-        )
+        if (configuration.accessMode == SoundchartsAccessMode.LEGACY_CREDENTIALS) {
+            SettingsTextField(
+                label = "Soundcharts App ID",
+                value = configuration.appId,
+                onValueChange = onAppIdChange,
+                isSecret = true,
+                enabled = !state.isSoundchartsBusy,
+            )
+            SettingsTextField(
+                label = "Soundcharts API Key",
+                value = configuration.apiKey,
+                onValueChange = onApiKeyChange,
+                isSecret = true,
+                enabled = !state.isSoundchartsBusy,
+            )
+        }
         state.soundchartsMessage?.let {
             SettingsMessage(it, state.isSoundchartsError)
         }
@@ -327,32 +387,179 @@ private fun SettingsHeader(onBack: () -> Unit) {
 
 @Composable
 private fun AccessSection(
-    configuration: AirtableConfiguration,
+    state: SettingsUiState,
     onFieldChange: (SettingsField, String) -> Unit,
+    onConnect: () -> Unit,
+    onDisconnect: () -> Unit,
+    onUseOAuthMode: () -> Unit,
+    onUsePersonalAccessTokenMode: () -> Unit,
+    onSelectBase: (String) -> Unit,
+    onSelectTable: (String) -> Unit,
+    onRefreshResources: () -> Unit,
 ) {
+    val configuration = state.configuration
+    var showBasePicker by rememberSaveable { mutableStateOf(false) }
+    var showTablePicker by rememberSaveable { mutableStateOf(false) }
+    val selectedBase = state.availableBases.firstOrNull { it.id == configuration.baseId }
+    val selectedTable = state.availableTables.firstOrNull { it.id == configuration.table }
+
     SettingsSection(
         title = "Accès",
-        description = "PAT requis : schema.bases:read, data.records:read et data.records:write, limité à ta base.",
+        description = "OAuth est recommandé : aucun token ne doit être copié par l’utilisateur.",
     ) {
-        SettingsTextField(
-            label = "Personal Access Token",
-            value = configuration.personalAccessToken,
-            onValueChange = { onFieldChange(SettingsField.TOKEN, it) },
-            isSecret = true,
-        )
-        SettingsTextField(
-            label = "Base ID",
-            value = configuration.baseId,
-            onValueChange = { onFieldChange(SettingsField.BASE_ID, it) },
-            supportingText = "Exemple : appXXXXXXXXXXXXXX",
-        )
-        SettingsTextField(
-            label = "Table (nom ou ID)",
-            value = configuration.table,
-            onValueChange = { onFieldChange(SettingsField.TABLE, it) },
-            supportingText = "Exemple : Morceaux ou tblXXXXXXXXXXXXXX",
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FilterChip(
+                selected = configuration.authenticationMode == AirtableAuthenticationMode.OAUTH,
+                onClick = onUseOAuthMode,
+                label = { Text("OAuth") },
+            )
+            FilterChip(
+                selected = configuration.authenticationMode ==
+                    AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN,
+                onClick = onUsePersonalAccessTokenMode,
+                label = { Text("Mode avancé") },
+            )
+        }
+
+        if (configuration.authenticationMode == AirtableAuthenticationMode.OAUTH) {
+            if (!state.isOAuthAvailable) {
+                Text(
+                    text = "Cette build développeur n’a pas encore de Client ID Airtable. " +
+                        "Le mode avancé reste disponible pour les tests.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RekordbotMutedText,
+                )
+            }
+            if (state.isOAuthConnected) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Compte Airtable")
+                    RekordbotStatusBadge(label = "Connecté", isPositive = true)
+                }
+                OutlinedButton(
+                    onClick = { showBasePicker = true },
+                    enabled = !state.isOAuthBusy && state.availableBases.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(selectedBase?.name ?: "Choisir une base")
+                }
+                OutlinedButton(
+                    onClick = { showTablePicker = true },
+                    enabled = !state.isOAuthBusy && state.availableTables.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(selectedTable?.name ?: "Choisir une table")
+                }
+                OutlinedButton(
+                    onClick = onRefreshResources,
+                    enabled = !state.isOAuthBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(if (state.isOAuthBusy) "Chargement…" else "Actualiser les bases")
+                }
+                TextButton(onClick = onDisconnect, enabled = !state.isOAuthBusy) {
+                    Text("Déconnecter Airtable")
+                }
+            } else {
+                RekordbotPrimaryButton(
+                    label = if (state.isOAuthBusy) "Connexion…" else "Connecter Airtable",
+                    onClick = onConnect,
+                    enabled = state.isOAuthAvailable && !state.isOAuthBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            Text(
+                text = "Compatibilité temporaire pour les installations existantes. " +
+                    "Scopes requis : schema.bases:read, data.records:read et data.records:write.",
+                style = MaterialTheme.typography.bodySmall,
+                color = RekordbotMutedText,
+            )
+            SettingsTextField(
+                label = "Personal Access Token",
+                value = configuration.personalAccessToken,
+                onValueChange = { onFieldChange(SettingsField.TOKEN, it) },
+                isSecret = true,
+            )
+            SettingsTextField(
+                label = "Base ID",
+                value = configuration.baseId,
+                onValueChange = { onFieldChange(SettingsField.BASE_ID, it) },
+                supportingText = "Exemple : appXXXXXXXXXXXXXX",
+            )
+            SettingsTextField(
+                label = "Table (nom ou ID)",
+                value = configuration.table,
+                onValueChange = { onFieldChange(SettingsField.TABLE, it) },
+                supportingText = "Exemple : Sons ou tblXXXXXXXXXXXXXX",
+            )
+        }
+    }
+
+    if (showBasePicker) {
+        AirtableResourceDialog(
+            title = "Choisir une base",
+            resources = state.availableBases.map { it.id to it.name },
+            onSelect = {
+                showBasePicker = false
+                onSelectBase(it)
+            },
+            onDismiss = { showBasePicker = false },
         )
     }
+    if (showTablePicker) {
+        AirtableResourceDialog(
+            title = "Choisir une table",
+            resources = state.availableTables.map { it.id to it.name },
+            onSelect = {
+                showTablePicker = false
+                onSelectTable(it)
+            },
+            onDismiss = { showTablePicker = false },
+        )
+    }
+}
+
+@Composable
+private fun AirtableResourceDialog(
+    title: String,
+    resources: List<Pair<String, String>>,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                resources.forEach { (id, name) ->
+                    OutlinedButton(
+                        onClick = { onSelect(id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Text(name)
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuler") }
+        },
+    )
 }
 
 @Composable
@@ -543,6 +750,13 @@ private fun SettingsScreenPreview() {
             onBack = {},
             onFieldChange = { _, _ -> },
             onDuplicateStrategyChange = {},
+            onConnectAirtable = {},
+            onDisconnectAirtable = {},
+            onUseOAuthMode = {},
+            onUsePersonalAccessTokenMode = {},
+            onSelectBase = {},
+            onSelectTable = {},
+            onRefreshResources = {},
             onSave = {},
             onTestConnection = {},
             onCreateDemoRecord = {},

@@ -6,7 +6,7 @@ Rekordbot Mobile lit la playlist Spotify alimentée automatiquement par Shazam. 
 
 1. Créer une application dans le [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
 2. Ajouter exactement cette Redirect URI : `rekordbot-mobile-login://callback`.
-3. Copier le **Client ID** dans l’écran Shazam de Rekordbot Mobile.
+3. Fournir le **Client ID** au build avec `REKORDBOT_SPOTIFY_CLIENT_ID`.
 4. Ne jamais renseigner ni distribuer le Client Secret : l’application utilise Authorization Code avec PKCE.
 5. Vérifier que le compte Spotify utilisé fait partie des utilisateurs autorisés de l’application en Development Mode.
 
@@ -15,7 +15,7 @@ Les scopes demandés sont `playlist-read-private` et `user-modify-playback-state
 ## Première synchronisation
 
 1. Dans Shazam Android, activer la synchronisation Spotify afin de créer `My Shazam Tracks` ou `Mes titres Shazam`.
-2. Dans Rekordbot Mobile, ouvrir **Shazam**, saisir le Client ID puis choisir **Connecter Spotify**.
+2. Dans Rekordbot Mobile, ouvrir **Shazam** puis choisir **Connecter Spotify**.
 3. Autoriser l’accès dans Spotify et revenir automatiquement dans Rekordbot Mobile.
 4. Lancer **Synchroniser**. Si la playlist n’est pas détectée automatiquement, renseigner son nom exact.
 

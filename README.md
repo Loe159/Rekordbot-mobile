@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify ou synchronisé depuis Shazam, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-Version actuelle : **1.1.1**.
+Version actuelle : **1.2.0**.
 
 > Le contrat P7 de synchronisation Mobile ↔ Airtable ↔ PC est documenté et versionné. Voir [docs/AIRTABLE_SYNC_CONTRACT.md](docs/AIRTABLE_SYNC_CONTRACT.md).
 
@@ -35,17 +35,20 @@ app/src/main/java/com/loe159/rekordbot/mobile/
     └── theme/                 # Couleurs, typographie, formes et thème
 ```
 
-L’application appelle directement l’API Airtable, sans dépendance à un PC ni API intermédiaire. Le Personal Access Token est chiffré en AES-GCM avec une clé conservée dans l’Android Keystore ; les sauvegardes Android de l’application sont désactivées pour ne pas exporter sa configuration.
+L’application appelle directement l’API Airtable avec OAuth Authorization Code + PKCE. Les jetons renouvelables sont chiffrés en AES-GCM avec une clé conservée dans l’Android Keystore ; les sauvegardes Android de l’application sont désactivées pour ne pas exporter sa configuration. Le PAT reste disponible uniquement comme mode avancé de transition.
 
-Les identifiants Soundcharts sont facultatifs et conservés dans un coffre Keystore distinct de celui d’Airtable. Ils ne sont ni committés ni journalisés.
+Dans une build publique, Soundcharts passe par le petit service `backend/` : le Client Secret reste côté serveur et l’APK ne reçoit que l’ISRC et les genres utiles. Les identifiants legacy locaux restent disponibles uniquement lorsque l’URL du service n’est pas configurée.
 
 ## Configurer Airtable
 
-Dans l’application, ouvrir **Configurer Airtable**, puis renseigner :
+Dans l’application, ouvrir **Configurer Airtable**, puis :
 
-1. un Personal Access Token limité à la base cible avec les droits `schema.bases:read`, `data.records:read` et `data.records:write` ;
-2. le Base ID (`app…`) et le nom ou l’ID de la table (`tbl…`) ;
-3. les noms exacts des champs Airtable et les valeurs par défaut. Les valeurs proposées correspondent à la table `Sons`.
+1. choisir **Connecter Airtable** ;
+2. autoriser une ou plusieurs bases dans Airtable ;
+3. sélectionner la base et la table `Sons` détectées par l’application ;
+4. vérifier les noms exacts des champs et les valeurs par défaut.
+
+Le mode avancé accepte encore un PAT limité à la base cible avec les droits `schema.bases:read`, `data.records:read` et `data.records:write`.
 
 Les champs optionnels absents de la table peuvent être laissés vides. **Tester la connexion** lit le schéma de la vraie table, vérifie chaque champ configuré et enregistre la configuration si elle est valide. La création d’un enregistrement de démonstration demande ensuite une confirmation explicite.
 
@@ -63,7 +66,7 @@ Les valeurs exactes proposées sont centralisées dans `DjQualificationOptions` 
 
 ## Synchroniser Shazam via Spotify
 
-La phase P9 ajoute une boîte de réception alimentée par la playlist Spotify `My Shazam Tracks` / `Mes titres Shazam`. La connexion utilise OAuth PKCE : aucun mot de passe Spotify ni client secret n’est stocké dans l’application. Le Client ID et l’URI de redirection proviennent d’une application créée dans Spotify Developer Dashboard ; les jetons sont chiffrés dans un coffre Android Keystore séparé.
+La phase P9 ajoute une boîte de réception alimentée par la playlist Spotify `My Shazam Tracks` / `Mes titres Shazam`. La connexion utilise OAuth PKCE : aucun mot de passe Spotify ni client secret n’est stocké dans l’application. Dans une build publique, le Client ID est fourni au build et l’utilisateur voit uniquement **Connecter Spotify** ; les jetons sont chiffrés dans un coffre Android Keystore séparé.
 
 Chaque morceau synchronisé reste localement **À décider** jusqu’à une action explicite. **Préparer** ouvre l’éditeur de métadonnées existant et enverra ensuite la ligne Airtable avec `Source = Shazam`. **Ignorer** conserve la décision localement afin que le morceau ne revienne pas lors des synchronisations suivantes. L’application ne crée jamais automatiquement une ligne Airtable depuis la playlist.
 
@@ -75,9 +78,9 @@ La création de l’application Spotify, la Redirect URI et le dépannage sont d
 
 ## Enrichissement Soundcharts optionnel
 
-Dans **Réglages → Enrichissement Soundcharts**, l’option peut être activée avec un `App ID` et une `API Key` legacy existants, puis testée. L’application interroge l’endpoint officiel `GET /api/v2.25/song/by-platform/spotify/{id}` à partir du Spotify Track ID et en extrait l’ISRC ainsi que les genres `root`/`sub`, conservés dans leur ordre sous forme de texte brut dédoublonné.
+Dans **Réglages → Enrichissement Soundcharts**, l’option interroge le service Rekordbot à partir du Spotify Track ID. Le service obtient côté serveur un jeton Soundcharts court, appelle `GET /api/v2.25/song/by-platform/spotify/{id}`, puis ne renvoie que l’ISRC et les genres `root`/`sub`.
 
-Soundcharts recommande désormais des jetons d’accès obtenus avec un Client ID et un Client Secret côté serveur. Le mode direct mobile `x-app-id` / `x-api-key` est donc réservé aux comptes disposant déjà de ces identifiants legacy ; aucun nouveau secret ne doit être intégré au code ou distribué dans l’APK.
+Le mode direct mobile `x-app-id` / `x-api-key` reste réservé aux builds développeur et aux comptes disposant déjà de ces identifiants legacy. Aucun nouveau secret Soundcharts ne doit être intégré au code ou distribué dans l’APK.
 
 L’enrichissement reste non bloquant : une erreur d’authentification, un morceau absent ou une limite de requêtes n’empêche jamais l’envoi ni l’enregistrement d’un brouillon. Un genre ou un ISRC déjà saisi est conservé. Si Soundcharts propose un genre différent, l’aperçu affiche une suggestion et demande explicitement de choisir **Remplacer par la suggestion**.
 
@@ -85,9 +88,7 @@ L’enrichissement reste non bloquant : une erreur d’authentification, un morc
 
 Pré-requis : Android Studio compatible AGP 8.13, JDK 17 et SDK Android 36.
 
-```bash
-./gradlew assembleDebug
-```
+Créer `secrets.properties` à partir de `secrets.properties.example`, puis lancer `./gradlew assembleDebug`. Les Client ID ne sont pas secrets ; les Client Secrets ne doivent jamais apparaître dans ce fichier ni dans l’APK.
 
 L’APK est généré dans `app/build/outputs/apk/debug/`.
 
@@ -101,6 +102,6 @@ La CI exécute les mêmes contrôles à chaque push et pull request, puis publie
 
 ## Configuration locale
 
-Ne jamais commiter de token Airtable, d’identifiants Soundcharts ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés.
+Ne jamais commiter de jeton utilisateur, de Client Secret Soundcharts ni de clé de signature. Les fichiers `local.properties`, `secrets.properties`, `keystore.properties`, `.env`, `*.jks` et `*.keystore` sont ignorés. La configuration OAuth et du service public est détaillée dans [docs/PUBLIC_CONNECTIONS.md](docs/PUBLIC_CONNECTIONS.md).
 
 Pour signer une release, copier `keystore.properties.example` vers `keystore.properties` et renseigner une clé durable, ou fournir les quatre variables `REKORDBOT_STORE_*` / `REKORDBOT_KEY_*` documentées. Sans configuration, le build release reste volontairement non signé.

@@ -8,12 +8,15 @@ import kotlinx.coroutines.withContext
 
 class SharedPreferencesSpotifyConfigurationRepository(
     context: Context,
+    private val bundledClientId: String = "",
 ) : SpotifyConfigurationRepository {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
     override suspend fun load(): SpotifyConfiguration = withContext(Dispatchers.IO) {
         SpotifyConfiguration(
-            clientId = preferences.getString(KEY_CLIENT_ID, "").orEmpty(),
+            clientId = bundledClientId.trim().ifBlank {
+                preferences.getString(KEY_CLIENT_ID, "").orEmpty()
+            },
             redirectUri = preferences.getString(
                 KEY_REDIRECT_URI,
                 SpotifyConfiguration.DEFAULT_REDIRECT_URI,
@@ -26,8 +29,13 @@ class SharedPreferencesSpotifyConfigurationRepository(
     }
 
     override suspend fun save(configuration: SpotifyConfiguration) = withContext(Dispatchers.IO) {
-        preferences.edit()
-            .putString(KEY_CLIENT_ID, configuration.clientId.trim())
+        preferences.edit().apply {
+            if (bundledClientId.isBlank()) {
+                putString(KEY_CLIENT_ID, configuration.clientId.trim())
+            } else {
+                remove(KEY_CLIENT_ID)
+            }
+        }
             .putString(KEY_REDIRECT_URI, configuration.redirectUri.trim())
             .putString(KEY_PLAYLIST_NAME, configuration.playlistName.trim())
             .commit()

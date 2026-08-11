@@ -1,6 +1,8 @@
 package com.loe159.rekordbot.mobile.ui.settings
 
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableBaseSummary
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTableSummary
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsConfiguration
 
 data class SettingsUiState(
@@ -8,6 +10,11 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val isBusy: Boolean = false,
     val isConnectionValidated: Boolean = false,
+    val isOAuthAvailable: Boolean = false,
+    val isOAuthConnected: Boolean = false,
+    val isOAuthBusy: Boolean = false,
+    val availableBases: List<AirtableBaseSummary> = emptyList(),
+    val availableTables: List<AirtableTableSummary> = emptyList(),
     val message: String? = null,
     val isError: Boolean = false,
     val savedVersion: Int = 0,

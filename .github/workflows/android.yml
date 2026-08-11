@@ -27,7 +27,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      - name: Verify public API
+        run: npm test --prefix backend
+
       - name: Format, lint, test and build debug/release
+        env:
+          REKORDBOT_SPOTIFY_CLIENT_ID: ${{ secrets.REKORDBOT_SPOTIFY_CLIENT_ID }}
+          REKORDBOT_AIRTABLE_CLIENT_ID: ${{ secrets.REKORDBOT_AIRTABLE_CLIENT_ID }}
+          REKORDBOT_PUBLIC_API_BASE_URL: ${{ secrets.REKORDBOT_PUBLIC_API_BASE_URL }}
         run: >-
           ./gradlew formatCheck lintDebug lintRelease
           testDebugUnitTest testReleaseUnitTest

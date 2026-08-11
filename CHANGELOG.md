@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Client ID Spotify intégré aux builds publiques, avec saisie développeur conservée si absent ;
+- connexion Airtable OAuth PKCE, jetons chiffrés et renouvellement avec rotation du refresh token ;
+- sélection des bases et tables Airtable autorisées depuis les réglages ;
+- PAT Airtable conservé comme mode avancé de transition ;
+- service Soundcharts côté serveur et client mobile sans identifiant fournisseur ;
+- contrôles CI du service public et configuration des builds via secrets GitHub.
+
 ## 1.1.1
 
 - pré-écoute lecture/pause des titres Shazam sur le client Spotify actif ;

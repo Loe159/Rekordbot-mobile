@@ -20,9 +20,19 @@ class AirtableConfigurationValidatorTest {
     fun `missing access values return understandable errors`() {
         val errors = AirtableConfigurationValidator.localErrors(AirtableConfiguration(table = ""))
 
-        assertTrue(errors.contains("Le token Airtable est obligatoire."))
+        assertTrue(errors.contains("Le token Airtable est obligatoire en mode avancé."))
         assertTrue(errors.contains("Le Base ID est obligatoire."))
         assertTrue(errors.contains("La table est obligatoire."))
+    }
+
+    @Test
+    fun `oauth configuration does not require a personal token`() {
+        val configuration = validConfiguration.copy(
+            personalAccessToken = "",
+            authenticationMode = AirtableAuthenticationMode.OAUTH,
+        )
+
+        assertTrue(AirtableConfigurationValidator.localErrors(configuration).isEmpty())
     }
 
     @Test

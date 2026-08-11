@@ -2,6 +2,7 @@ package com.loe159.rekordbot.mobile.domain.model
 
 data class AirtableConfiguration(
     val personalAccessToken: String = "",
+    val authenticationMode: AirtableAuthenticationMode = AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN,
     val baseId: String = "",
     val table: String = "",
     val fields: AirtableFieldMappings = AirtableFieldMappings(),
@@ -10,6 +11,11 @@ data class AirtableConfiguration(
     val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.BLOCK,
     val defaultRekordbotState: String = "À traiter",
 )
+
+enum class AirtableAuthenticationMode {
+    OAUTH,
+    PERSONAL_ACCESS_TOKEN,
+}
 
 enum class DuplicateStrategy {
     BLOCK,

@@ -2,15 +2,18 @@ package com.loe159.rekordbot.mobile.data.local
 
 import android.content.Context
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
+import com.loe159.rekordbot.mobile.domain.model.AirtableAuthenticationMode
 import com.loe159.rekordbot.mobile.domain.model.AirtableFieldMappings
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.AirtableSessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class SharedPreferencesAirtableConfigurationRepository(
     context: Context,
     private val tokenVault: AndroidKeystoreTokenVault = AndroidKeystoreTokenVault(context),
+    private val oauthSessionRepository: AirtableSessionRepository? = null,
 ) : AirtableConfigurationRepository {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
@@ -18,6 +21,12 @@ class SharedPreferencesAirtableConfigurationRepository(
         val defaults = AirtableFieldMappings()
         AirtableConfiguration(
             personalAccessToken = tokenVault.read(),
+            authenticationMode = preferences.getString(
+                KEY_AUTHENTICATION_MODE,
+                AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN.name,
+            )?.let { stored ->
+                AirtableAuthenticationMode.entries.firstOrNull { it.name == stored }
+            } ?: AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN,
             baseId = preferences.getString(KEY_BASE_ID, "").orEmpty(),
             table = preferences.getString(KEY_TABLE, "").orEmpty(),
             fields = AirtableFieldMappings(
@@ -74,6 +83,7 @@ class SharedPreferencesAirtableConfigurationRepository(
     override suspend fun save(configuration: AirtableConfiguration) = withContext(Dispatchers.IO) {
         tokenVault.write(configuration.personalAccessToken.trim())
         preferences.edit()
+            .putString(KEY_AUTHENTICATION_MODE, configuration.authenticationMode.name)
             .putString(KEY_BASE_ID, configuration.baseId.trim())
             .putString(KEY_TABLE, configuration.table.trim())
             .putString(KEY_FIELD_TITLE, configuration.fields.title.trim())
@@ -103,7 +113,16 @@ class SharedPreferencesAirtableConfigurationRepository(
     }
 
     override suspend fun isConnectionValidated(): Boolean = withContext(Dispatchers.IO) {
-        preferences.getBoolean(KEY_CONNECTION_VALIDATED, false) && tokenVault.read().isNotBlank()
+        val authenticationMode = preferences.getString(
+            KEY_AUTHENTICATION_MODE,
+            AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN.name,
+        )
+        val hasCredentials = if (authenticationMode == AirtableAuthenticationMode.OAUTH.name) {
+            oauthSessionRepository?.loadTokens() != null
+        } else {
+            tokenVault.read().isNotBlank()
+        }
+        preferences.getBoolean(KEY_CONNECTION_VALIDATED, false) && hasCredentials
     }
 
     override suspend fun markConnectionValidated() = withContext(Dispatchers.IO) {
@@ -114,6 +133,7 @@ class SharedPreferencesAirtableConfigurationRepository(
     private companion object {
         const val PREFERENCES_NAME = "rekordbot_airtable_configuration"
         const val KEY_BASE_ID = "base_id"
+        const val KEY_AUTHENTICATION_MODE = "authentication_mode"
         const val KEY_TABLE = "table"
         const val KEY_FIELD_TITLE = "field_title"
         const val KEY_FIELD_ARTIST = "field_artist"

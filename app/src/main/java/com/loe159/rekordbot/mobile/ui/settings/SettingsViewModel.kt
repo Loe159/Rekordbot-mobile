@@ -1,13 +1,20 @@
 package com.loe159.rekordbot.mobile.ui.settings
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
+import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableOAuthClient
+import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableResourceGateway
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableOAuthConfiguration
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableTableSummary
+import com.loe159.rekordbot.mobile.domain.model.AirtableAuthenticationMode
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfiguration
 import com.loe159.rekordbot.mobile.domain.model.AirtableConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.model.DuplicateStrategy
 import com.loe159.rekordbot.mobile.domain.repository.AirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.domain.repository.AirtableSessionRepository
 import com.loe159.rekordbot.mobile.domain.repository.SoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsConfigurationValidator
 import com.loe159.rekordbot.mobile.domain.soundcharts.SoundchartsGateway
@@ -21,8 +28,14 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val configurationRepository: AirtableConfigurationRepository,
     private val airtableGateway: AirtableGateway,
+    private val airtableResourceGateway: AirtableResourceGateway,
+    private val airtableSessionRepository: AirtableSessionRepository,
+    private val airtableOAuthConfiguration: AirtableOAuthConfiguration,
     private val soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
     private val soundchartsGateway: SoundchartsGateway,
+    private val airtableOAuthClientFactory: (AirtableOAuthConfiguration) -> AirtableOAuthClient = {
+        AirtableOAuthClient(it)
+    },
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = mutableState.asStateFlow()
@@ -43,7 +56,15 @@ class SettingsViewModel(
                             soundchartsConfiguration = soundchartsConfiguration,
                             isLoading = false,
                             isConnectionValidated = isConnectionValidated,
+                            isOAuthAvailable = airtableOAuthConfiguration.clientId.isNotBlank(),
+                            isOAuthConnected = airtableSessionRepository.loadTokens() != null,
                         )
+                    }
+                    if (
+                        configuration.authenticationMode == AirtableAuthenticationMode.OAUTH &&
+                        airtableSessionRepository.loadTokens() != null
+                    ) {
+                        loadAirtableResources(configuration)
                     }
                 }
                 .onFailure {
@@ -55,6 +76,210 @@ class SettingsViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    fun beginAirtableConnection(openAuthorizationUrl: (String) -> Unit) {
+        if (airtableOAuthConfiguration.clientId.isBlank()) {
+            showErrors(listOf("Cette build ne contient pas encore de Client ID Airtable."))
+            return
+        }
+        viewModelScope.launch {
+            mutableState.update { it.copy(isOAuthBusy = true, message = null, isError = false) }
+            runCatching {
+                val session = airtableOAuthClientFactory(airtableOAuthConfiguration)
+                    .createAuthorizationSession()
+                airtableSessionRepository.savePendingAuthorization(session)
+                session.authorizationUrl
+            }.onSuccess { url ->
+                mutableState.update { it.copy(isOAuthBusy = false) }
+                openAuthorizationUrl(url)
+            }.onFailure { error ->
+                showFailure(error, "Impossible de démarrer la connexion Airtable.")
+            }
+        }
+    }
+
+    fun handleAirtableAuthorizationCallback(callbackUri: String) {
+        viewModelScope.launch {
+            mutableState.update { it.copy(isOAuthBusy = true, message = null, isError = false) }
+            val result = runCatching {
+                val callback = Uri.parse(callbackUri)
+                callback.getQueryParameter("error")?.let {
+                    throw IllegalStateException("Autorisation Airtable refusée.")
+                }
+                val code = callback.getQueryParameter("code").orEmpty()
+                val returnedState = callback.getQueryParameter("state")
+                val pending = airtableSessionRepository.loadPendingAuthorization()
+                    ?: throw IllegalStateException("Connexion Airtable expirée. Recommence.")
+                airtableOAuthClientFactory(airtableOAuthConfiguration)
+                    .exchangeAuthorizationCode(code, returnedState, pending)
+                    .getOrThrow()
+            }
+            airtableSessionRepository.clearPendingAuthorization()
+            result.onSuccess { tokens ->
+                airtableSessionRepository.saveTokens(tokens)
+                val configuration = state.value.configuration.copy(
+                    authenticationMode = AirtableAuthenticationMode.OAUTH,
+                    personalAccessToken = "",
+                )
+                configurationRepository.save(configuration)
+                mutableState.update {
+                    it.copy(
+                        configuration = configuration,
+                        isOAuthConnected = true,
+                        isOAuthBusy = false,
+                        isConnectionValidated = false,
+                        message = "Airtable connecté. Choisis la base et la table.",
+                        isError = false,
+                        savedVersion = it.savedVersion + 1,
+                    )
+                }
+                loadAirtableResources(configuration)
+            }.onFailure { error ->
+                showFailure(error, "Connexion Airtable impossible.")
+            }
+        }
+    }
+
+    fun disconnectAirtable() {
+        viewModelScope.launch {
+            mutableState.update { it.copy(isOAuthBusy = true, message = null) }
+            runCatching {
+                airtableSessionRepository.clearTokens()
+                val configuration = state.value.configuration.copy(
+                    authenticationMode = AirtableAuthenticationMode.OAUTH,
+                )
+                configurationRepository.save(configuration)
+                configuration
+            }.onSuccess { configuration ->
+                mutableState.update {
+                    it.copy(
+                        configuration = configuration,
+                        isOAuthConnected = false,
+                        isOAuthBusy = false,
+                        isConnectionValidated = false,
+                        availableBases = emptyList(),
+                        availableTables = emptyList(),
+                        message = "Compte Airtable déconnecté de l’application.",
+                        isError = false,
+                        savedVersion = it.savedVersion + 1,
+                    )
+                }
+            }.onFailure { error ->
+                showFailure(error, "Déconnexion Airtable impossible.")
+            }
+        }
+    }
+
+    fun usePersonalAccessTokenMode() {
+        mutableState.update {
+            it.copy(
+                configuration = it.configuration.copy(
+                    authenticationMode = AirtableAuthenticationMode.PERSONAL_ACCESS_TOKEN,
+                ),
+                isConnectionValidated = false,
+                message = null,
+                isError = false,
+            )
+        }
+    }
+
+    fun useOAuthMode() {
+        mutableState.update {
+            it.copy(
+                configuration = it.configuration.copy(
+                    authenticationMode = AirtableAuthenticationMode.OAUTH,
+                ),
+                isConnectionValidated = false,
+                message = null,
+                isError = false,
+            )
+        }
+    }
+
+    fun selectAirtableBase(baseId: String) {
+        val configuration = state.value.configuration.copy(baseId = baseId, table = "")
+        mutableState.update {
+            it.copy(
+                configuration = configuration,
+                availableTables = emptyList(),
+                isConnectionValidated = false,
+                message = null,
+            )
+        }
+        viewModelScope.launch { loadAirtableTables(configuration, baseId) }
+    }
+
+    fun selectAirtableTable(tableId: String) {
+        mutableState.update {
+            it.copy(
+                configuration = it.configuration.copy(table = tableId),
+                isConnectionValidated = false,
+                message = null,
+            )
+        }
+    }
+
+    fun refreshAirtableResources() {
+        viewModelScope.launch { loadAirtableResources(state.value.configuration) }
+    }
+
+    private suspend fun loadAirtableResources(configuration: AirtableConfiguration) {
+        mutableState.update { it.copy(isOAuthBusy = true) }
+        airtableResourceGateway.listBases(configuration)
+            .onSuccess { bases ->
+                val selectedBaseId = configuration.baseId.takeIf { configured ->
+                    bases.any { it.id == configured }
+                } ?: bases.singleOrNull()?.id.orEmpty()
+                val updatedConfiguration = configuration.copy(baseId = selectedBaseId)
+                mutableState.update {
+                    it.copy(
+                        configuration = updatedConfiguration,
+                        availableBases = bases,
+                        isOAuthBusy = selectedBaseId.isNotBlank(),
+                        message = if (bases.isEmpty()) {
+                            "Aucune base n’a été autorisée dans Airtable."
+                        } else {
+                            it.message
+                        },
+                    )
+                }
+                if (selectedBaseId.isNotBlank()) {
+                    loadAirtableTables(updatedConfiguration, selectedBaseId)
+                }
+            }
+            .onFailure { error ->
+                showFailure(error, "Impossible de lister les bases Airtable.")
+            }
+    }
+
+    private suspend fun loadAirtableTables(
+        configuration: AirtableConfiguration,
+        baseId: String,
+    ) {
+        mutableState.update { it.copy(isOAuthBusy = true) }
+        airtableResourceGateway.listTables(configuration, baseId)
+            .onSuccess { tables -> applyAirtableTables(configuration, tables) }
+            .onFailure { error ->
+                showFailure(error, "Impossible de lister les tables Airtable.")
+            }
+    }
+
+    private fun applyAirtableTables(
+        configuration: AirtableConfiguration,
+        tables: List<AirtableTableSummary>,
+    ) {
+        val selectedTableId = configuration.table.takeIf { configured ->
+            tables.any { it.id == configured }
+        } ?: tables.firstOrNull { it.name.equals("Sons", ignoreCase = true) }?.id
+            ?: tables.singleOrNull()?.id.orEmpty()
+        mutableState.update {
+            it.copy(
+                configuration = configuration.copy(table = selectedTableId),
+                availableTables = tables,
+                isOAuthBusy = false,
+            )
         }
     }
 
@@ -262,6 +487,7 @@ class SettingsViewModel(
         mutableState.update {
             it.copy(
                 isBusy = false,
+                isOAuthBusy = false,
                 isConnectionValidated = false,
                 message = errors.joinToString("\n"),
                 isError = true,
@@ -273,6 +499,7 @@ class SettingsViewModel(
         mutableState.update {
             it.copy(
                 isBusy = false,
+                isOAuthBusy = false,
                 isConnectionValidated = false,
                 message = error.toUserFacingMessage(fallbackMessage),
                 isError = true,
@@ -333,6 +560,9 @@ class SettingsViewModel(
         fun factory(
             configurationRepository: AirtableConfigurationRepository,
             airtableGateway: AirtableGateway,
+            airtableResourceGateway: AirtableResourceGateway,
+            airtableSessionRepository: AirtableSessionRepository,
+            airtableOAuthConfiguration: AirtableOAuthConfiguration,
             soundchartsConfigurationRepository: SoundchartsConfigurationRepository,
             soundchartsGateway: SoundchartsGateway,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -341,6 +571,9 @@ class SettingsViewModel(
                 SettingsViewModel(
                     configurationRepository,
                     airtableGateway,
+                    airtableResourceGateway,
+                    airtableSessionRepository,
+                    airtableOAuthConfiguration,
                     soundchartsConfigurationRepository,
                     soundchartsGateway,
                 ) as T

@@ -20,4 +20,15 @@ class SoundchartsConfigurationValidatorTest {
 
         assertEquals(2, errors.size)
     }
+
+    @Test
+    fun `managed service needs no credential in the app`() {
+        val configuration = SoundchartsConfiguration(
+            enabled = true,
+            accessMode = SoundchartsAccessMode.MANAGED_SERVICE,
+        )
+
+        assertTrue(configuration.isComplete)
+        assertTrue(SoundchartsConfigurationValidator.localErrors(configuration).isEmpty())
+    }
 }

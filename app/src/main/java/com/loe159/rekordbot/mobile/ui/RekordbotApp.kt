@@ -13,7 +13,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.loe159.rekordbot.mobile.BuildConfig
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesAirtableConfigurationRepository
+import com.loe159.rekordbot.mobile.data.local.AndroidKeystoreAirtableSessionRepository
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesSoundchartsConfigurationRepository
 import com.loe159.rekordbot.mobile.data.local.AndroidKeystoreSpotifySessionRepository
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesSpotifyConfigurationRepository
@@ -23,12 +25,15 @@ import com.loe159.rekordbot.mobile.data.local.shazam.RoomShazamInboxRepository
 import com.loe159.rekordbot.mobile.data.work.WorkManagerQueueScheduler
 import com.loe159.rekordbot.mobile.data.work.WorkManagerShazamSyncScheduler
 import com.loe159.rekordbot.mobile.data.remote.airtable.DirectAirtableGateway
+import com.loe159.rekordbot.mobile.data.remote.airtable.OAuthAwareAirtableAccessTokenProvider
 import com.loe159.rekordbot.mobile.data.remote.spotify.SpotifyWebMetadataGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.DirectSpotifyPlaylistGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.DirectSpotifyPlaybackGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.SpotifyOAuthClient
 import com.loe159.rekordbot.mobile.data.remote.soundcharts.DirectSoundchartsGateway
+import com.loe159.rekordbot.mobile.data.remote.soundcharts.BackendSoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableOAuthConfiguration
 import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxCounts
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxTrack
@@ -50,17 +55,45 @@ fun RekordbotApp(
     onShareClosed: () -> Unit = {},
     spotifyAuthorizationCallback: String? = null,
     onSpotifyAuthorizationCallbackConsumed: () -> Unit = {},
+    airtableAuthorizationCallback: String? = null,
+    onAirtableAuthorizationCallbackConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val airtableSessionRepository = remember {
+        AndroidKeystoreAirtableSessionRepository(context.applicationContext)
+    }
     val configurationRepository = remember {
-        SharedPreferencesAirtableConfigurationRepository(context.applicationContext)
+        SharedPreferencesAirtableConfigurationRepository(
+            context.applicationContext,
+            oauthSessionRepository = airtableSessionRepository,
+        )
     }
-    val airtableGateway = remember { DirectAirtableGateway() }
+    val airtableOAuthConfiguration = remember {
+        AirtableOAuthConfiguration(clientId = BuildConfig.AIRTABLE_CLIENT_ID)
+    }
+    val airtableTokenProvider = remember {
+        OAuthAwareAirtableAccessTokenProvider(
+            oauthConfiguration = airtableOAuthConfiguration,
+            sessionRepository = airtableSessionRepository,
+        )
+    }
+    val airtableGateway = remember {
+        DirectAirtableGateway(tokenProvider = airtableTokenProvider)
+    }
     val soundchartsConfigurationRepository = remember {
-        SharedPreferencesSoundchartsConfigurationRepository(context.applicationContext)
+        SharedPreferencesSoundchartsConfigurationRepository(
+            context.applicationContext,
+            managedServiceAvailable = BuildConfig.PUBLIC_API_BASE_URL.isNotBlank(),
+        )
     }
-    val soundchartsGateway = remember { DirectSoundchartsGateway() }
+    val soundchartsGateway = remember {
+        if (BuildConfig.PUBLIC_API_BASE_URL.isNotBlank()) {
+            BackendSoundchartsGateway(BuildConfig.PUBLIC_API_BASE_URL)
+        } else {
+            DirectSoundchartsGateway()
+        }
+    }
     val spotifyMetadataGateway = remember { SpotifyWebMetadataGateway() }
     val pendingTrackRepository = remember {
         RoomPendingTrackRepository(
@@ -68,7 +101,10 @@ fun RekordbotApp(
         )
     }
     val spotifyConfigurationRepository = remember {
-        SharedPreferencesSpotifyConfigurationRepository(context.applicationContext)
+        SharedPreferencesSpotifyConfigurationRepository(
+            context.applicationContext,
+            bundledClientId = BuildConfig.SPOTIFY_CLIENT_ID,
+        )
     }
     val spotifySessionRepository = remember {
         AndroidKeystoreSpotifySessionRepository(context.applicationContext)
@@ -139,6 +175,10 @@ fun RekordbotApp(
         if (spotifyAuthorizationCallback != null) showShazam = true
     }
 
+    LaunchedEffect(airtableAuthorizationCallback) {
+        if (airtableAuthorizationCallback != null) showSettings = true
+    }
+
     BackHandler(
         enabled = incomingShare != null || selectedShazamTrack != null ||
             showSettings || showQueue || showShazam,
@@ -204,8 +244,13 @@ fun RekordbotApp(
             SettingsRoute(
                 configurationRepository = configurationRepository,
                 airtableGateway = airtableGateway,
+                airtableResourceGateway = airtableGateway,
+                airtableSessionRepository = airtableSessionRepository,
+                airtableOAuthConfiguration = airtableOAuthConfiguration,
                 soundchartsConfigurationRepository = soundchartsConfigurationRepository,
                 soundchartsGateway = soundchartsGateway,
+                authorizationCallback = airtableAuthorizationCallback,
+                onAuthorizationCallbackConsumed = onAirtableAuthorizationCallbackConsumed,
                 onBack = { showSettings = false },
                 onConfigurationSaved = { configurationVersion++ },
             )
@@ -222,6 +267,7 @@ fun RekordbotApp(
                 inboxRepository = shazamInboxRepository,
                 synchronizer = shazamSynchronizer,
                 playbackController = shazamPlaybackController,
+                bundledClientId = BuildConfig.SPOTIFY_CLIENT_ID,
                 authorizationCallback = spotifyAuthorizationCallback,
                 onAuthorizationCallbackConsumed = onSpotifyAuthorizationCallbackConsumed,
                 onConnectionAvailable = shazamSyncScheduler::schedulePeriodic,

@@ -8,14 +8,14 @@ Une application Android autonome permettant de capturer un titre depuis Spotify 
 Spotify / Shazam → Rekordbot Mobile → Airtable → Rekordbot PC → Rekordbox
 ```
 
-L’application ne dépend ni du PC ni d’une API intermédiaire : elle appelle Airtable directement.
+L’application ne dépend pas du PC. Elle appelle Airtable directement avec OAuth PKCE ; seul Soundcharts passe par un petit service sécurisé pour garder son Client Secret hors de l’APK.
 
 ## Périmètre et décisions
 
 - Android natif : Kotlin + Jetpack Compose.
 - Réception du partage Spotify via `ACTION_SEND`, notamment les liens `open.spotify.com/track/...` et les URI `spotify:track:...`.
-- Écriture directe dans Airtable avec un Personal Access Token configuré dans l’application.
-- Le token et la configuration Airtable restent uniquement sur le téléphone, dans le stockage sécurisé Android ; aucun secret ne doit être commité.
+- Écriture directe dans Airtable avec OAuth PKCE et sélection des bases autorisées ; le PAT reste un mode avancé temporaire.
+- Les jetons OAuth restent uniquement sur le téléphone, dans le stockage sécurisé Android ; aucun secret ne doit être commité.
 - Aucune récupération ou téléchargement automatique de musique depuis Spotify ou YouTube.
 - Le genre Soundcharts reste une valeur brute dans un champ Airtable texte libre, sans mapping vers une liste fermée.
 - L’échange avec RekordBot PC passe uniquement par Airtable. Le PC utilise actuellement son import transactionnel direct dans la base Rekordbox ; aucun XML fictif n’est annoncé.
@@ -169,6 +169,18 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : OAuth Spotify PKCE, synchronisation paginée manuelle/périodique, boîte Room idempotente, décisions persistantes, réutilisation de l’éditeur Airtable, pré-écoute Spotify Premium et ouverture directe dans Spotify.
 
+### P10 — Connexions publiques ✅
+
+- Intégrer le Client ID Spotify au build public afin que l’utilisateur n’ait rien à copier.
+- Connecter Airtable avec OAuth Authorization Code + PKCE, sans Client Secret dans l’APK.
+- Lister les bases autorisées et leurs tables afin de sélectionner `Sons` dans l’application.
+- Chiffrer les access tokens, refresh tokens et états PKCE Airtable dans un coffre dédié.
+- Renouveler les jetons Airtable avant les envois immédiats comme depuis WorkManager.
+- Faire passer Soundcharts par un service minimal qui conserve le Client Secret côté serveur.
+- Conserver temporairement les modes PAT Airtable et Soundcharts legacy pour la migration.
+
+**Livré** : configuration publique injectée au build, OAuth Airtable PKCE avec rotation des refresh tokens, sélecteurs de base/table, reprise de la file avec jeton frais et Worker Soundcharts testable sans secret mobile.
+
 ## Ordre recommandé
 
 1. P0 — Socle
@@ -181,5 +193,6 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 8. P6 — Enrichissement
 9. P8 — Publication
 10. P9 — Boîte de réception Shazam
+11. P10 — Connexions publiques
 
 Le premier livrable utile est donc : **Spotify → Partager → Rekordbot Mobile → aperçu → ajout direct dans Airtable**.

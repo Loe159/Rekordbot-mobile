@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.WorkerParameters
+import com.loe159.rekordbot.mobile.BuildConfig
 import com.loe159.rekordbot.mobile.data.local.AndroidKeystoreSpotifySessionRepository
 import com.loe159.rekordbot.mobile.data.local.SharedPreferencesSpotifyConfigurationRepository
 import com.loe159.rekordbot.mobile.data.local.queue.RekordbotDatabase
@@ -27,6 +28,7 @@ class ShazamSyncWorker(
         val synchronizer = ShazamPlaylistSynchronizer(
             configurationRepository = SharedPreferencesSpotifyConfigurationRepository(
                 applicationContext,
+                bundledClientId = BuildConfig.SPOTIFY_CLIENT_ID,
             ),
             sessionRepository = sessionRepository,
             playlistGateway = DirectSpotifyPlaylistGateway(),

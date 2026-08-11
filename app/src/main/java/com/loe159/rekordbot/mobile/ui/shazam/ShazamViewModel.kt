@@ -30,11 +30,17 @@ class ShazamViewModel(
     private val inboxRepository: ShazamInboxRepository,
     private val synchronizer: ShazamPlaylistSynchronizer,
     private val playbackController: ShazamSpotifyPlaybackController,
+    private val bundledClientId: String = "",
     private val oauthClientFactory: (SpotifyConfiguration) -> SpotifyOAuthClient = {
         SpotifyOAuthClient(it)
     },
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(ShazamUiState(isLoading = true))
+    private val mutableState = MutableStateFlow(
+        ShazamUiState(
+            isLoading = true,
+            isClientIdManagedByApp = bundledClientId.isNotBlank(),
+        ),
+    )
     val state: StateFlow<ShazamUiState> = mutableState.asStateFlow()
 
     init {
@@ -304,6 +310,7 @@ class ShazamViewModel(
             inboxRepository: ShazamInboxRepository,
             synchronizer: ShazamPlaylistSynchronizer,
             playbackController: ShazamSpotifyPlaybackController,
+            bundledClientId: String = "",
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = ShazamViewModel(
@@ -312,6 +319,7 @@ class ShazamViewModel(
                 inboxRepository = inboxRepository,
                 synchronizer = synchronizer,
                 playbackController = playbackController,
+                bundledClientId = bundledClientId,
             ) as T
         }
     }

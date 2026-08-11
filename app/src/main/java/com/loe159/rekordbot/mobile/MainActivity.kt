@@ -16,12 +16,14 @@ import com.loe159.rekordbot.mobile.ui.RekordbotApp
 class MainActivity : ComponentActivity() {
     private var incomingShare by mutableStateOf<SpotifyShareParseResult?>(null)
     private var spotifyAuthorizationCallback by mutableStateOf<String?>(null)
+    private var airtableAuthorizationCallback by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         incomingShare = intent.parseSpotifyShare()
         spotifyAuthorizationCallback = intent.parseSpotifyAuthorizationCallback()
+        airtableAuthorizationCallback = intent.parseAirtableAuthorizationCallback()
         enableEdgeToEdge()
         setContent {
             RekordbotApp(
@@ -29,6 +31,8 @@ class MainActivity : ComponentActivity() {
                 onShareClosed = ::clearIncomingShare,
                 spotifyAuthorizationCallback = spotifyAuthorizationCallback,
                 onSpotifyAuthorizationCallbackConsumed = ::clearSpotifyAuthorizationCallback,
+                airtableAuthorizationCallback = airtableAuthorizationCallback,
+                onAirtableAuthorizationCallbackConsumed = ::clearAirtableAuthorizationCallback,
             )
         }
     }
@@ -38,6 +42,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         incomingShare = intent.parseSpotifyShare()
         spotifyAuthorizationCallback = intent.parseSpotifyAuthorizationCallback()
+        airtableAuthorizationCallback = intent.parseAirtableAuthorizationCallback()
     }
 
     private fun Intent.parseSpotifyShare(): SpotifyShareParseResult? {
@@ -56,6 +61,15 @@ class MainActivity : ComponentActivity() {
         return callback.toString()
     }
 
+    private fun Intent.parseAirtableAuthorizationCallback(): String? {
+        if (action != Intent.ACTION_VIEW) return null
+        val callback = data ?: return null
+        if (callback.scheme != "rekordbot-mobile-login" || callback.host != "airtable-callback") {
+            return null
+        }
+        return callback.toString()
+    }
+
     private fun clearIncomingShare() {
         incomingShare = null
         setIntent(
@@ -67,6 +81,15 @@ class MainActivity : ComponentActivity() {
 
     private fun clearSpotifyAuthorizationCallback() {
         spotifyAuthorizationCallback = null
+        setIntent(
+            Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+            },
+        )
+    }
+
+    private fun clearAirtableAuthorizationCallback() {
+        airtableAuthorizationCallback = null
         setIntent(
             Intent(this, MainActivity::class.java).apply {
                 action = Intent.ACTION_MAIN
