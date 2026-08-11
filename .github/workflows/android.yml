@@ -3,6 +3,7 @@ name: Android
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -32,9 +33,9 @@ jobs:
 
       - name: Format, lint, test and build debug/release
         env:
-          REKORDBOT_SPOTIFY_CLIENT_ID: ${{ secrets.REKORDBOT_SPOTIFY_CLIENT_ID }}
-          REKORDBOT_AIRTABLE_CLIENT_ID: ${{ secrets.REKORDBOT_AIRTABLE_CLIENT_ID }}
-          REKORDBOT_PUBLIC_API_BASE_URL: ${{ secrets.REKORDBOT_PUBLIC_API_BASE_URL }}
+          REKORDBOT_SPOTIFY_CLIENT_ID: ${{ vars.REKORDBOT_SPOTIFY_CLIENT_ID || secrets.REKORDBOT_SPOTIFY_CLIENT_ID }}
+          REKORDBOT_AIRTABLE_CLIENT_ID: ${{ vars.REKORDBOT_AIRTABLE_CLIENT_ID || secrets.REKORDBOT_AIRTABLE_CLIENT_ID }}
+          REKORDBOT_PUBLIC_API_BASE_URL: ${{ vars.REKORDBOT_PUBLIC_API_BASE_URL || secrets.REKORDBOT_PUBLIC_API_BASE_URL }}
         run: >-
           ./gradlew formatCheck lintDebug lintRelease
           testDebugUnitTest testReleaseUnitTest
@@ -53,3 +54,76 @@ jobs:
           name: rekordbot-mobile-release-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Verify release tag
+        run: |
+          expected_tag="v$(./gradlew -q :app:printVersionName)"
+          test "$GITHUB_REF_NAME" = "$expected_tag" || {
+            echo "Release tag $GITHUB_REF_NAME does not match $expected_tag."
+            exit 1
+          }
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "Release commit is not part of main."
+            exit 1
+          }
+
+      - name: Restore upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.REKORDBOT_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/rekordbot-upload.jks"
+
+      - name: Build signed production artifacts
+        env:
+          REKORDBOT_SPOTIFY_CLIENT_ID: ${{ vars.REKORDBOT_SPOTIFY_CLIENT_ID || secrets.REKORDBOT_SPOTIFY_CLIENT_ID }}
+          REKORDBOT_AIRTABLE_CLIENT_ID: ${{ vars.REKORDBOT_AIRTABLE_CLIENT_ID || secrets.REKORDBOT_AIRTABLE_CLIENT_ID }}
+          REKORDBOT_PUBLIC_API_BASE_URL: ${{ vars.REKORDBOT_PUBLIC_API_BASE_URL || secrets.REKORDBOT_PUBLIC_API_BASE_URL }}
+          REKORDBOT_STORE_FILE: ${{ runner.temp }}/rekordbot-upload.jks
+          REKORDBOT_STORE_PASSWORD: ${{ secrets.REKORDBOT_STORE_PASSWORD }}
+          REKORDBOT_KEY_ALIAS: ${{ secrets.REKORDBOT_KEY_ALIAS }}
+          REKORDBOT_KEY_PASSWORD: ${{ secrets.REKORDBOT_KEY_PASSWORD }}
+        run: >-
+          ./gradlew -PrekordbotProduction=true
+          formatCheck lintRelease testReleaseUnitTest
+          bundleRelease assembleRelease --stacktrace
+
+      - name: Generate checksums
+        run: >-
+          sha256sum
+          app/build/outputs/bundle/release/app-release.aab
+          app/build/outputs/apk/release/app-release.apk
+          > app/build/outputs/release-sha256.txt
+
+      - name: Upload signed production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekordbot-mobile-${{ github.ref_name }}
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/release-sha256.txt
+          if-no-files-found: error
+          retention-days: 30

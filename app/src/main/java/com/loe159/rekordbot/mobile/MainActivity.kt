@@ -9,6 +9,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableAuthorizationCallback
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParser
 import com.loe159.rekordbot.mobile.ui.RekordbotApp
@@ -64,7 +65,12 @@ class MainActivity : ComponentActivity() {
     private fun Intent.parseAirtableAuthorizationCallback(): String? {
         if (action != Intent.ACTION_VIEW) return null
         val callback = data ?: return null
-        if (callback.scheme != "rekordbot-mobile-login" || callback.host != "airtable-callback") {
+        if (
+            !AirtableAuthorizationCallback.isExpected(
+                callbackUri = callback.toString(),
+                expectedRedirectUri = BuildConfig.AIRTABLE_REDIRECT_URI,
+            )
+        ) {
             return null
         }
         return callback.toString()

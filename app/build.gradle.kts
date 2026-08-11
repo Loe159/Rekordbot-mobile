@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -51,6 +52,51 @@ fun quotedBuildConfigValue(value: String): String =
 val spotifyClientId = publicConfigValue("spotifyClientId", "REKORDBOT_SPOTIFY_CLIENT_ID")
 val airtableClientId = publicConfigValue("airtableClientId", "REKORDBOT_AIRTABLE_CLIENT_ID")
 val publicApiBaseUrl = publicConfigValue("publicApiBaseUrl", "REKORDBOT_PUBLIC_API_BASE_URL")
+val publicApiOrigin = runCatching { URI(publicApiBaseUrl) }
+    .getOrNull()
+    ?.takeIf { uri ->
+        uri.scheme == "https" &&
+            !uri.host.isNullOrBlank() &&
+            uri.port == -1 &&
+            uri.rawUserInfo == null &&
+            uri.rawPath.isNullOrEmpty() &&
+            uri.rawQuery == null &&
+            uri.rawFragment == null
+    }
+check(publicApiBaseUrl.isBlank() || publicApiOrigin != null) {
+    "REKORDBOT_PUBLIC_API_BASE_URL must be an HTTPS origin without path, port, query, or fragment."
+}
+val normalizedPublicApiBaseUrl = publicApiOrigin
+    ?.host
+    ?.lowercase()
+    ?.let { host -> "https://$host" }
+    .orEmpty()
+val airtableRedirectUri = normalizedPublicApiBaseUrl
+    .takeIf(String::isNotBlank)
+    ?.plus("/oauth/airtable/callback")
+    .orEmpty()
+val isProductionBuild = providers.gradleProperty("rekordbotProduction")
+    .orNull
+    ?.toBooleanStrictOrNull()
+    ?: false
+
+if (isProductionBuild) {
+    check(spotifyClientId.isNotBlank()) {
+        "A production build requires REKORDBOT_SPOTIFY_CLIENT_ID."
+    }
+    check(airtableClientId.isNotBlank()) {
+        "A production build requires REKORDBOT_AIRTABLE_CLIENT_ID."
+    }
+    check(publicApiOrigin != null) {
+        "A production build requires REKORDBOT_PUBLIC_API_BASE_URL to be an HTTPS origin without path, port, query, or fragment."
+    }
+    check(isReleaseSigningConfigured) {
+        "A production build requires all four REKORDBOT release signing values."
+    }
+}
+
+val appVersionCode = 6
+val appVersionName = "1.2.1"
 
 android {
     namespace = "com.loe159.rekordbot.mobile"
@@ -60,13 +106,16 @@ android {
         applicationId = "com.loe159.rekordbot.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.2.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SPOTIFY_CLIENT_ID", quotedBuildConfigValue(spotifyClientId))
         buildConfigField("String", "AIRTABLE_CLIENT_ID", quotedBuildConfigValue(airtableClientId))
-        buildConfigField("String", "PUBLIC_API_BASE_URL", quotedBuildConfigValue(publicApiBaseUrl))
+        buildConfigField("String", "PUBLIC_API_BASE_URL", quotedBuildConfigValue(normalizedPublicApiBaseUrl))
+        buildConfigField("String", "AIRTABLE_REDIRECT_URI", quotedBuildConfigValue(airtableRedirectUri))
+        manifestPlaceholders["airtableCallbackScheme"] = "https"
+        manifestPlaceholders["airtableCallbackHost"] = publicApiOrigin?.host?.lowercase() ?: "rekordbot.invalid"
     }
 
     signingConfigs {
@@ -112,6 +161,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+tasks.register("printVersionName") {
+    description = "Prints the Android version name for release automation."
+    doLast { println(appVersionName) }
 }
 
 kotlin {

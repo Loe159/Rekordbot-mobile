@@ -15,7 +15,10 @@ class AirtableOAuthClientTest {
     fun `authorization exchange uses PKCE without client secret`() = runBlocking {
         var captured: AirtableOAuthHttpRequest? = null
         val client = AirtableOAuthClient(
-            configuration = AirtableOAuthConfiguration(clientId = "client-id"),
+            configuration = AirtableOAuthConfiguration(
+                clientId = "client-id",
+                redirectUri = "https://api.rekordbot.example/oauth/airtable/callback",
+            ),
             transport = AirtableOAuthTransport { request ->
                 captured = request
                 AirtableOAuthHttpResponse(
@@ -45,7 +48,10 @@ class AirtableOAuthClientTest {
     @Test
     fun `refresh immediately keeps the rotated refresh token`() = runBlocking {
         val client = AirtableOAuthClient(
-            configuration = AirtableOAuthConfiguration(clientId = "client-id"),
+            configuration = AirtableOAuthConfiguration(
+                clientId = "client-id",
+                redirectUri = "https://api.rekordbot.example/oauth/airtable/callback",
+            ),
             transport = AirtableOAuthTransport {
                 AirtableOAuthHttpResponse(
                     200,

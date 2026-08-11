@@ -424,7 +424,7 @@ private fun AccessSection(
         if (configuration.authenticationMode == AirtableAuthenticationMode.OAUTH) {
             if (!state.isOAuthAvailable) {
                 Text(
-                    text = "Cette build développeur n’a pas encore de Client ID Airtable. " +
+                    text = "La connexion OAuth Airtable n’est pas configurée dans cette build. " +
                         "Le mode avancé reste disponible pour les tests.",
                     style = MaterialTheme.typography.bodySmall,
                     color = RekordbotMutedText,

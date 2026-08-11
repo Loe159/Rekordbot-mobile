@@ -70,7 +70,10 @@ fun RekordbotApp(
         )
     }
     val airtableOAuthConfiguration = remember {
-        AirtableOAuthConfiguration(clientId = BuildConfig.AIRTABLE_CLIENT_ID)
+        AirtableOAuthConfiguration(
+            clientId = BuildConfig.AIRTABLE_CLIENT_ID,
+            redirectUri = BuildConfig.AIRTABLE_REDIRECT_URI,
+        )
     }
     val airtableTokenProvider = remember {
         OAuthAwareAirtableAccessTokenProvider(

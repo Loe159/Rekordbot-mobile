@@ -26,6 +26,7 @@ class QueuedTrackWorker(
         val airtableSessionRepository = AndroidKeystoreAirtableSessionRepository(applicationContext)
         val airtableOAuthConfiguration = AirtableOAuthConfiguration(
             clientId = BuildConfig.AIRTABLE_CLIENT_ID,
+            redirectUri = BuildConfig.AIRTABLE_REDIRECT_URI,
         )
         val airtableTokenProvider = OAuthAwareAirtableAccessTokenProvider(
             oauthConfiguration = airtableOAuthConfiguration,

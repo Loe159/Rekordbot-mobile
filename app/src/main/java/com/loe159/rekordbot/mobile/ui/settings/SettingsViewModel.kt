@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableGateway
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableOAuthClient
 import com.loe159.rekordbot.mobile.data.remote.airtable.AirtableResourceGateway
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableAuthorizationCallback
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableOAuthConfiguration
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableTableSummary
 import com.loe159.rekordbot.mobile.domain.model.AirtableAuthenticationMode
@@ -56,7 +57,10 @@ class SettingsViewModel(
                             soundchartsConfiguration = soundchartsConfiguration,
                             isLoading = false,
                             isConnectionValidated = isConnectionValidated,
-                            isOAuthAvailable = airtableOAuthConfiguration.clientId.isNotBlank(),
+                            isOAuthAvailable = airtableOAuthConfiguration.clientId.isNotBlank() &&
+                                AirtableAuthorizationCallback.isSecureRedirectUri(
+                                    airtableOAuthConfiguration.redirectUri,
+                                ),
                             isOAuthConnected = airtableSessionRepository.loadTokens() != null,
                         )
                     }
@@ -80,8 +84,13 @@ class SettingsViewModel(
     }
 
     fun beginAirtableConnection(openAuthorizationUrl: (String) -> Unit) {
-        if (airtableOAuthConfiguration.clientId.isBlank()) {
-            showErrors(listOf("Cette build ne contient pas encore de Client ID Airtable."))
+        if (
+            airtableOAuthConfiguration.clientId.isBlank() ||
+            !AirtableAuthorizationCallback.isSecureRedirectUri(
+                airtableOAuthConfiguration.redirectUri,
+            )
+        ) {
+            showErrors(listOf("La connexion Airtable n’est pas configurée dans cette build."))
             return
         }
         viewModelScope.launch {

@@ -15,7 +15,10 @@ class AirtableAccessTokenProviderTest {
     @Test
     fun `personal token remains available during migration`() = runBlocking {
         val provider = OAuthAwareAirtableAccessTokenProvider(
-            oauthConfiguration = AirtableOAuthConfiguration(clientId = "public-client"),
+            oauthConfiguration = AirtableOAuthConfiguration(
+                clientId = "public-client",
+                redirectUri = "https://api.rekordbot.example/oauth/airtable/callback",
+            ),
             sessionRepository = FakeAirtableSessionRepository(),
         )
 
@@ -37,7 +40,10 @@ class AirtableAccessTokenProviderTest {
             ),
         )
         val provider = OAuthAwareAirtableAccessTokenProvider(
-            oauthConfiguration = AirtableOAuthConfiguration(clientId = "public-client"),
+            oauthConfiguration = AirtableOAuthConfiguration(
+                clientId = "public-client",
+                redirectUri = "https://api.rekordbot.example/oauth/airtable/callback",
+            ),
             sessionRepository = repository,
             oauthClientFactory = { configuration ->
                 AirtableOAuthClient(

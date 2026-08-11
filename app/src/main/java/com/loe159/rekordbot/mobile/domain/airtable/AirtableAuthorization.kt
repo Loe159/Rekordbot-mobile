@@ -1,11 +1,42 @@
 package com.loe159.rekordbot.mobile.domain.airtable
 
+import java.net.URI
+
 data class AirtableOAuthConfiguration(
     val clientId: String,
-    val redirectUri: String = DEFAULT_REDIRECT_URI,
-) {
-    companion object {
-        const val DEFAULT_REDIRECT_URI = "rekordbot-mobile-login://airtable-callback"
+    val redirectUri: String,
+)
+
+/** Strictly matches the verified HTTPS App Link registered with Airtable. */
+object AirtableAuthorizationCallback {
+    fun isSecureRedirectUri(uri: String): Boolean {
+        if (uri.isBlank()) return false
+        return runCatching {
+            val parsed = URI(uri)
+            parsed.scheme.equals("https", ignoreCase = true) &&
+                !parsed.host.isNullOrBlank() &&
+                parsed.userInfo == null &&
+                parsed.rawQuery == null &&
+                parsed.fragment == null
+        }.getOrDefault(false)
+    }
+
+    fun isExpected(callbackUri: String, expectedRedirectUri: String): Boolean {
+        if (callbackUri.isBlank() || !isSecureRedirectUri(expectedRedirectUri)) return false
+        return runCatching {
+            val callback = URI(callbackUri)
+            val expected = URI(expectedRedirectUri)
+            expected.scheme.equals("https", ignoreCase = true) &&
+                callback.scheme.equals(expected.scheme, ignoreCase = true) &&
+                callback.host.equals(expected.host, ignoreCase = true) &&
+                callback.port == expected.port &&
+                callback.rawPath == expected.rawPath &&
+                callback.userInfo == null &&
+                callback.fragment == null &&
+                expected.userInfo == null &&
+                expected.rawQuery == null &&
+                expected.fragment == null
+        }.getOrDefault(false)
     }
 }
 

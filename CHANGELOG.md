@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1
+
+- Redirect URI Airtable HTTPS dérivée d’une origine publique unique ;
+- Android App Link vérifié par Digital Asset Links, avec page de repli web ;
+- build de production stricte et artefacts AAB/APK signés sur les tags de release ;
+- procédure de publication Google Play et validation des certificats documentées.
+
 ## 1.2.0
 
 - Client ID Spotify intégré aux builds publiques, avec saisie développeur conservée si absent ;

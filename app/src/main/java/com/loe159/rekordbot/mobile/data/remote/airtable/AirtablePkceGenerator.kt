@@ -1,6 +1,7 @@
 package com.loe159.rekordbot.mobile.data.remote.airtable
 
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableAuthorizationSession
+import com.loe159.rekordbot.mobile.domain.airtable.AirtableAuthorizationCallback
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableOAuthConfiguration
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableScopes
 import com.loe159.rekordbot.mobile.domain.airtable.AirtableSecret
@@ -23,8 +24,8 @@ class AirtablePkceGenerator private constructor(
         authorizationEndpoint: String = DEFAULT_AUTHORIZATION_ENDPOINT,
     ): AirtableAuthorizationSession {
         require(configuration.clientId.isNotBlank()) { "Le Client ID Airtable est obligatoire." }
-        require(configuration.redirectUri.isNotBlank()) {
-            "L’URI de redirection Airtable est obligatoire."
+        require(AirtableAuthorizationCallback.isSecureRedirectUri(configuration.redirectUri)) {
+            "L’URI de redirection Airtable doit être une URL HTTPS valide."
         }
         val verifier = base64Url(randomBytes(VERIFIER_RANDOM_BYTE_COUNT))
         val state = base64Url(randomBytes(STATE_RANDOM_BYTE_COUNT))
