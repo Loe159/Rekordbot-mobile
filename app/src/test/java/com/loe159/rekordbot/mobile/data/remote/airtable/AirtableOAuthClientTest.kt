@@ -39,6 +39,7 @@ class AirtableOAuthClientTest {
         assertTrue(captured?.body.orEmpty().contains("client_id=client-id"))
         assertFalse(captured?.body.orEmpty().contains("client_secret"))
         assertFalse(captured.toString().contains("verifier-value"))
+        assertFalse(captured.toString().contains("auth-code"))
     }
 
     @Test

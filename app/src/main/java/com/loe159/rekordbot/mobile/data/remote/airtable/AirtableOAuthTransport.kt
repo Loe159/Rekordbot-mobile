@@ -11,7 +11,10 @@ data class AirtableOAuthHttpRequest(
     val url: String,
     val headers: Map<String, String> = emptyMap(),
     val body: String? = null,
-)
+) {
+    override fun toString(): String =
+        "AirtableOAuthHttpRequest(method=$method, url=$url, body=[REDACTED])"
+}
 
 data class AirtableOAuthHttpResponse(
     val statusCode: Int,
