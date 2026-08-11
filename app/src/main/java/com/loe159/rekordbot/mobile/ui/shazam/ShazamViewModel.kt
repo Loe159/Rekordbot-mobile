@@ -11,8 +11,12 @@ import com.loe159.rekordbot.mobile.domain.repository.SpotifyConfigurationReposit
 import com.loe159.rekordbot.mobile.domain.repository.SpotifySessionRepository
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxTrack
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamPlaylistSynchronizer
+import com.loe159.rekordbot.mobile.domain.shazam.ShazamSpotifyPlaybackController
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyConfiguration
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyConfigurationValidator
+import com.loe159.rekordbot.mobile.domain.spotify.SpotifyPlaybackAction
+import com.loe159.rekordbot.mobile.domain.spotify.SpotifyPlaybackAuthorizationRequiredException
+import com.loe159.rekordbot.mobile.domain.spotify.SpotifyScopes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +29,7 @@ class ShazamViewModel(
     private val sessionRepository: SpotifySessionRepository,
     private val inboxRepository: ShazamInboxRepository,
     private val synchronizer: ShazamPlaylistSynchronizer,
+    private val playbackController: ShazamSpotifyPlaybackController,
     private val oauthClientFactory: (SpotifyConfiguration) -> SpotifyOAuthClient = {
         SpotifyOAuthClient(it)
     },
@@ -51,13 +56,15 @@ class ShazamViewModel(
         }
         viewModelScope.launch {
             runCatching {
-                configurationRepository.load() to (sessionRepository.loadTokens() != null)
-            }.onSuccess { (configuration, connected) ->
+                configurationRepository.load() to sessionRepository.loadTokens()
+            }.onSuccess { (configuration, tokens) ->
                 mutableState.update {
                     it.copy(
                         clientId = configuration.clientId,
                         playlistName = configuration.playlistName,
-                        isConnected = connected,
+                        isConnected = tokens != null,
+                        hasPlaybackPermission = SpotifyScopes.PLAYBACK_CONTROL in
+                            tokens?.scopes.orEmpty(),
                         isLoading = false,
                     )
                 }
@@ -162,6 +169,7 @@ class ShazamViewModel(
                 mutableState.update {
                     it.copy(
                         isConnected = true,
+                        hasPlaybackPermission = SpotifyScopes.PLAYBACK_CONTROL in tokens.scopes,
                         isConnecting = false,
                         message = "Spotify connecté. Synchronisation de Shazam…",
                     )
@@ -219,6 +227,55 @@ class ShazamViewModel(
         inboxRepository.reopen(track.spotifyTrackId)
     }
 
+    fun togglePreview(track: ShazamInboxTrack) {
+        if (state.value.playbackBusyTrackId != null) return
+        viewModelScope.launch {
+            val wasPlaying = state.value.playingTrackId == track.spotifyTrackId
+            mutableState.update {
+                it.copy(
+                    playbackBusyTrackId = track.spotifyTrackId,
+                    errorMessage = null,
+                    message = null,
+                )
+            }
+            playbackController.toggle(track.spotifyTrackId, wasPlaying)
+                .onSuccess { action ->
+                    mutableState.update {
+                        it.copy(
+                            playingTrackId = when (action) {
+                                SpotifyPlaybackAction.PLAYING -> track.spotifyTrackId
+                                SpotifyPlaybackAction.PAUSED -> null
+                            },
+                            playbackBusyTrackId = null,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    val authorizationRequired =
+                        error is SpotifyPlaybackAuthorizationRequiredException
+                    val authorizationExpired = error is SpotifyApiException &&
+                        error.statusCode == 401
+                    if (authorizationExpired) sessionRepository.clearTokens()
+                    mutableState.update {
+                        it.copy(
+                            isConnected = if (authorizationExpired) false else it.isConnected,
+                            hasPlaybackPermission = if (
+                                authorizationRequired || authorizationExpired
+                            ) {
+                                false
+                            } else {
+                                it.hasPlaybackPermission
+                            },
+                            playbackBusyTrackId = null,
+                            errorMessage = error.message
+                                ?.takeIf(String::isNotBlank)
+                                ?: "Pré-écoute Spotify impossible.",
+                        )
+                    }
+                }
+        }
+    }
+
     private fun updateDecision(action: suspend () -> Boolean) {
         viewModelScope.launch {
             runCatching { action() }.onFailure {
@@ -246,6 +303,7 @@ class ShazamViewModel(
             sessionRepository: SpotifySessionRepository,
             inboxRepository: ShazamInboxRepository,
             synchronizer: ShazamPlaylistSynchronizer,
+            playbackController: ShazamSpotifyPlaybackController,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = ShazamViewModel(
@@ -253,6 +311,7 @@ class ShazamViewModel(
                 sessionRepository = sessionRepository,
                 inboxRepository = inboxRepository,
                 synchronizer = synchronizer,
+                playbackController = playbackController,
             ) as T
         }
     }

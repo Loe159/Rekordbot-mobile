@@ -19,7 +19,7 @@ class SpotifyPkceGenerator private constructor(
 
     fun createAuthorizationSession(
         configuration: SpotifyConfiguration,
-        scopes: Set<String> = SpotifyScopes.SHAZAM_PLAYLIST_READ,
+        scopes: Set<String> = SpotifyScopes.SHAZAM,
         showDialog: Boolean = false,
         authorizationEndpoint: String = DEFAULT_AUTHORIZATION_ENDPOINT,
     ): SpotifyAuthorizationSession {

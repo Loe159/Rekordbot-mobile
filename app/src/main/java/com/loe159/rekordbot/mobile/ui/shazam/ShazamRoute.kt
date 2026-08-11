@@ -1,5 +1,6 @@
 package com.loe159.rekordbot.mobile.ui.shazam
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import com.loe159.rekordbot.mobile.domain.repository.SpotifyConfigurationReposit
 import com.loe159.rekordbot.mobile.domain.repository.SpotifySessionRepository
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxTrack
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamPlaylistSynchronizer
+import com.loe159.rekordbot.mobile.domain.shazam.ShazamSpotifyPlaybackController
 
 @Composable
 fun ShazamRoute(
@@ -20,6 +22,7 @@ fun ShazamRoute(
     sessionRepository: SpotifySessionRepository,
     inboxRepository: ShazamInboxRepository,
     synchronizer: ShazamPlaylistSynchronizer,
+    playbackController: ShazamSpotifyPlaybackController,
     authorizationCallback: String?,
     onAuthorizationCallbackConsumed: () -> Unit,
     onConnectionAvailable: () -> Unit,
@@ -33,6 +36,7 @@ fun ShazamRoute(
             sessionRepository = sessionRepository,
             inboxRepository = inboxRepository,
             synchronizer = synchronizer,
+            playbackController = playbackController,
         ),
     )
     val state by viewModel.state.collectAsState()
@@ -60,9 +64,28 @@ fun ShazamRoute(
             }
         },
         onSynchronize = viewModel::synchronize,
+        onEnablePlayback = {
+            viewModel.beginConnection { url ->
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+        },
         onTabSelected = viewModel::selectTab,
+        onPreview = viewModel::togglePreview,
+        onOpenSpotify = { track ->
+            val spotifyAppIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("spotify:track:${track.spotifyTrackId}"),
+            ).setPackage(SPOTIFY_PACKAGE_NAME)
+            try {
+                context.startActivity(spotifyAppIntent)
+            } catch (_: ActivityNotFoundException) {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(track.spotifyUrl)))
+            }
+        },
         onPrepare = onPrepare,
         onIgnore = viewModel::ignore,
         onRestore = viewModel::restore,
     )
 }
+
+private const val SPOTIFY_PACKAGE_NAME = "com.spotify.music"

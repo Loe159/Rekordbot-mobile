@@ -152,19 +152,22 @@ Les intitulés exacts et les valeurs de champs Select seront configurables, pour
 
 **Livré** : version 1.0.0, icônes adaptive/round/monochrome, splash Android, contraste des actions principales renforcé, accueil scrollable et retour système cohérent. Les erreurs inattendues ne révèlent plus leurs diagnostics bruts, les états chargement/action désactivée couvrent les parcours principaux et la CI valide lint, tests et assemblage en debug comme en release. La signature release est activée uniquement par un keystore externe stable, jamais commité ; la CI livre sinon un APK release explicitement non signé. Le guide `docs/RELEASE.md`, l’exemple de configuration et le changelog couvrent livraison et dépannage.
 
-### P9 — Boîte de réception Shazam 🚧
+### P9 — Boîte de réception Shazam ✅
 
 - Connecter le compte Spotify avec OAuth Authorization Code + PKCE, sans client secret dans l’application.
 - Retrouver la playlist synchronisée par Shazam, `My Shazam Tracks` / `Mes titres Shazam`, avec un nom configurable en solution de repli.
 - Importer tous ses morceaux avec pagination, puis synchroniser les nouveautés au lancement, manuellement et périodiquement.
 - Afficher une boîte de réception triée du plus récent au plus ancien avec quatre décisions persistantes : `À décider`, `Enregistré`, `Ignoré`, `Déjà présent`.
 - Proposer **Préparer** pour ouvrir l’éditeur existant avec titre, artiste, lien, Spotify Track ID et ISRC préremplis.
+- Proposer **Écouter / Pause** depuis la liste via le client Spotify actif et **Spotify** pour ouvrir directement le morceau.
 - Proposer **Ignorer** sans envoyer automatiquement le morceau vers Airtable, et permettre de consulter les morceaux ignorés.
 - Conserver les décisions lors des synchronisations suivantes : un morceau ignoré ou enregistré ne doit jamais réapparaître comme nouveau.
 - Utiliser le Spotify Track ID pour dédoublonner et envoyer les morceaux validés avec `Source = Shazam`.
 - Stocker les jetons Spotify dans un coffre Keystore distinct et renouveler l’accès via le refresh token.
 
 **Terminé quand** : un nouveau Shazam apparaît dans l’application sans créer d’entrée Airtable tant que l’utilisateur n’a pas choisi **Préparer**, et chaque décision reste stable après une nouvelle synchronisation.
+
+**Livré** : OAuth Spotify PKCE, synchronisation paginée manuelle/périodique, boîte Room idempotente, décisions persistantes, réutilisation de l’éditeur Airtable, pré-écoute Spotify Premium et ouverture directe dans Spotify.
 
 ## Ordre recommandé
 

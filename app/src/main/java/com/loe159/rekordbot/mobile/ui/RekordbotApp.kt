@@ -25,6 +25,7 @@ import com.loe159.rekordbot.mobile.data.work.WorkManagerShazamSyncScheduler
 import com.loe159.rekordbot.mobile.data.remote.airtable.DirectAirtableGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.SpotifyWebMetadataGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.DirectSpotifyPlaylistGateway
+import com.loe159.rekordbot.mobile.data.remote.spotify.DirectSpotifyPlaybackGateway
 import com.loe159.rekordbot.mobile.data.remote.spotify.SpotifyOAuthClient
 import com.loe159.rekordbot.mobile.data.remote.soundcharts.DirectSoundchartsGateway
 import com.loe159.rekordbot.mobile.domain.spotify.SpotifyShareParseResult
@@ -32,6 +33,7 @@ import com.loe159.rekordbot.mobile.domain.model.TrackDraft
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxCounts
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamInboxTrack
 import com.loe159.rekordbot.mobile.domain.shazam.ShazamPlaylistSynchronizer
+import com.loe159.rekordbot.mobile.domain.shazam.ShazamSpotifyPlaybackController
 import com.loe159.rekordbot.mobile.domain.shazam.SpotifyTokenRefresher
 import com.loe159.rekordbot.mobile.ui.home.HomeRoute
 import com.loe159.rekordbot.mobile.ui.queue.QueueRoute
@@ -72,6 +74,7 @@ fun RekordbotApp(
         AndroidKeystoreSpotifySessionRepository(context.applicationContext)
     }
     val spotifyPlaylistGateway = remember { DirectSpotifyPlaylistGateway() }
+    val spotifyPlaybackGateway = remember { DirectSpotifyPlaybackGateway() }
     val shazamInboxRepository = remember {
         RoomShazamInboxRepository(
             RekordbotDatabase.getInstance(context.applicationContext).shazamInboxDao(),
@@ -93,6 +96,19 @@ fun RekordbotApp(
     }
     val shazamSyncScheduler = remember {
         WorkManagerShazamSyncScheduler(context.applicationContext)
+    }
+    val shazamPlaybackController = remember {
+        ShazamSpotifyPlaybackController(
+            configurationRepository = spotifyConfigurationRepository,
+            sessionRepository = spotifySessionRepository,
+            playbackGateway = spotifyPlaybackGateway,
+            tokenRefresherFactory = { configuration ->
+                val oauthClient = SpotifyOAuthClient(configuration)
+                SpotifyTokenRefresher { currentTokens ->
+                    oauthClient.refreshTokens(currentTokens)
+                }
+            },
+        )
     }
     val queueWorkScheduler = remember { WorkManagerQueueScheduler(context.applicationContext) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
@@ -205,6 +221,7 @@ fun RekordbotApp(
                 sessionRepository = spotifySessionRepository,
                 inboxRepository = shazamInboxRepository,
                 synchronizer = shazamSynchronizer,
+                playbackController = shazamPlaybackController,
                 authorizationCallback = spotifyAuthorizationCallback,
                 onAuthorizationCallbackConsumed = onSpotifyAuthorizationCallbackConsumed,
                 onConnectionAvailable = shazamSyncScheduler::schedulePeriodic,

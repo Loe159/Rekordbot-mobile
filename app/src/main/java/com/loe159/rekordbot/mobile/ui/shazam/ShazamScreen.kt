@@ -53,7 +53,10 @@ fun ShazamScreen(
     onSaveConfiguration: () -> Unit,
     onConnect: () -> Unit,
     onSynchronize: () -> Unit,
+    onEnablePlayback: () -> Unit,
     onTabSelected: (ShazamInboxTab) -> Unit,
+    onPreview: (ShazamInboxTrack) -> Unit,
+    onOpenSpotify: (ShazamInboxTrack) -> Unit,
     onPrepare: (ShazamInboxTrack) -> Unit,
     onIgnore: (ShazamInboxTrack) -> Unit,
     onRestore: (ShazamInboxTrack) -> Unit,
@@ -80,6 +83,7 @@ fun ShazamScreen(
                     ConnectedSection(
                         state = state,
                         onSynchronize = onSynchronize,
+                        onEnablePlayback = onEnablePlayback,
                     )
                 }
             } else {
@@ -128,6 +132,12 @@ fun ShazamScreen(
                             track = track,
                             tab = state.selectedTab,
                             enabled = !state.isBusy,
+                            canPreview = state.hasPlaybackPermission,
+                            isPlaying = state.playingTrackId == track.spotifyTrackId,
+                            isPlaybackBusy = state.playbackBusyTrackId == track.spotifyTrackId,
+                            onEnablePlayback = onEnablePlayback,
+                            onPreview = { onPreview(track) },
+                            onOpenSpotify = { onOpenSpotify(track) },
                             onPrepare = { onPrepare(track) },
                             onIgnore = { onIgnore(track) },
                             onRestore = { onRestore(track) },
@@ -227,6 +237,7 @@ private fun SetupSection(
 private fun ConnectedSection(
     state: ShazamUiState,
     onSynchronize: () -> Unit,
+    onEnablePlayback: () -> Unit,
 ) {
     SectionCard {
         Row(
@@ -262,6 +273,21 @@ private fun ConnectedSection(
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isBusy,
         )
+        if (!state.hasPlaybackPermission) {
+            Text(
+                text = "Une reconnexion Spotify est nécessaire pour activer la pré-écoute.",
+                style = MaterialTheme.typography.bodySmall,
+                color = RekordbotMutedText,
+            )
+            OutlinedButton(
+                onClick = onEnablePlayback,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isBusy,
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text("Activer la pré-écoute")
+            }
+        }
     }
 }
 
@@ -296,6 +322,12 @@ private fun ShazamTrackCard(
     track: ShazamInboxTrack,
     tab: ShazamInboxTab,
     enabled: Boolean,
+    canPreview: Boolean,
+    isPlaying: Boolean,
+    isPlaybackBusy: Boolean,
+    onEnablePlayback: () -> Unit,
+    onPreview: () -> Unit,
+    onOpenSpotify: () -> Unit,
     onPrepare: () -> Unit,
     onIgnore: () -> Unit,
     onRestore: () -> Unit,
@@ -343,6 +375,35 @@ private fun ShazamTrackCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = if (canPreview) onPreview else onEnablePlayback,
+                    modifier = Modifier.weight(1f),
+                    enabled = enabled && !isPlaybackBusy,
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(
+                        when {
+                            isPlaybackBusy -> "Chargement…"
+                            isPlaying -> "Pause"
+                            canPreview -> "Écouter"
+                            else -> "Activer l’écoute"
+                        },
+                    )
+                }
+                OutlinedButton(
+                    onClick = onOpenSpotify,
+                    modifier = Modifier.weight(1f),
+                    enabled = enabled,
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text("Spotify")
                 }
             }
 
@@ -523,7 +584,10 @@ private fun ShazamScreenPreview() {
             onSaveConfiguration = {},
             onConnect = {},
             onSynchronize = {},
+            onEnablePlayback = {},
             onTabSelected = {},
+            onPreview = {},
+            onOpenSpotify = {},
             onPrepare = {},
             onIgnore = {},
             onRestore = {},

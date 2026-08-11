@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- pré-écoute lecture/pause des titres Shazam sur le client Spotify actif ;
+- ouverture directe de chaque morceau dans l’application Spotify, avec repli navigateur ;
+- demande explicite du scope Spotify de contrôle de lecture et parcours de reconnexion pour les sessions existantes.
+
 ## 1.1.0
 
 - connexion Spotify OAuth Authorization Code avec PKCE, sans client secret embarqué ;

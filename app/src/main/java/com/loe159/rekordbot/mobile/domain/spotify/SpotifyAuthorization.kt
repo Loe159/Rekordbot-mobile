@@ -20,5 +20,11 @@ data class SpotifyAuthorizationSession(
 )
 
 object SpotifyScopes {
-    val SHAZAM_PLAYLIST_READ: Set<String> = setOf("playlist-read-private")
+    const val PLAYLIST_READ_PRIVATE = "playlist-read-private"
+    const val PLAYBACK_CONTROL = "user-modify-playback-state"
+
+    val SHAZAM: Set<String> = setOf(
+        PLAYLIST_READ_PRIVATE,
+        PLAYBACK_CONTROL,
+    )
 }

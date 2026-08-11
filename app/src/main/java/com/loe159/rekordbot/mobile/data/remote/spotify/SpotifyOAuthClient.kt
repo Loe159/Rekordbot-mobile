@@ -19,7 +19,7 @@ class SpotifyOAuthClient(
     fun createAuthorizationSession(showDialog: Boolean = false): SpotifyAuthorizationSession =
         pkceGenerator.createAuthorizationSession(
             configuration = configuration,
-            scopes = SpotifyScopes.SHAZAM_PLAYLIST_READ,
+            scopes = SpotifyScopes.SHAZAM,
             showDialog = showDialog,
         )
 
@@ -47,7 +47,7 @@ class SpotifyOAuthClient(
             "code_verifier" to codeVerifier.reveal(),
         ),
         previousRefreshToken = null,
-        previousScopes = SpotifyScopes.SHAZAM_PLAYLIST_READ,
+        previousScopes = SpotifyScopes.SHAZAM,
     )
 
     suspend fun refreshTokens(currentTokens: SpotifyTokenSet): Result<SpotifyTokenSet> {

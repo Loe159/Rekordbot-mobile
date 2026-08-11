@@ -11,7 +11,7 @@ import org.junit.Test
 
 class SpotifyPkceGeneratorTest {
     @Test
-    fun `creates S256 authorization URL with state and private playlist scope`() {
+    fun `creates S256 authorization URL with playlist and playback scopes`() {
         val generator = SpotifyPkceGenerator(
             SpotifyRandomBytesProvider { size -> ByteArray(size) { index -> index.toByte() } },
         )
@@ -29,7 +29,10 @@ class SpotifyPkceGeneratorTest {
         assertEquals("client-id", parameters["client_id"])
         assertEquals(SpotifyConfiguration.DEFAULT_REDIRECT_URI, parameters["redirect_uri"])
         assertEquals("S256", parameters["code_challenge_method"])
-        assertEquals("playlist-read-private", parameters["scope"])
+        assertEquals(
+            "playlist-read-private user-modify-playback-state",
+            parameters["scope"],
+        )
         assertEquals(session.state, parameters["state"])
         assertEquals("[REDACTED]", session.codeVerifier.toString())
         assertTrue(generator.isExpectedState(session.state, session.state))

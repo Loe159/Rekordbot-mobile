@@ -13,6 +13,7 @@ data class ShazamUiState(
     val clientId: String = "",
     val playlistName: String = SpotifyConfiguration.DEFAULT_SHAZAM_PLAYLIST_NAME,
     val isConnected: Boolean = false,
+    val hasPlaybackPermission: Boolean = false,
     val accountName: String? = null,
     val connectedPlaylistName: String? = null,
     val counts: ShazamInboxCounts = ShazamInboxCounts(
@@ -28,6 +29,8 @@ data class ShazamUiState(
     val isSavingConfiguration: Boolean = false,
     val isConnecting: Boolean = false,
     val isSyncing: Boolean = false,
+    val playingTrackId: String? = null,
+    val playbackBusyTrackId: String? = null,
     val message: String? = null,
     val errorMessage: String? = null,
 ) {

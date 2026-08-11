@@ -2,7 +2,7 @@
 
 Application Android autonome pour capturer un morceau partagé depuis Spotify ou synchronisé depuis Shazam, le qualifier rapidement et l’envoyer directement dans Airtable. Rekordbot PC pourra ensuite synchroniser ces entrées vers le workflow Rekordbox.
 
-Version actuelle : **1.1.0**.
+Version actuelle : **1.1.1**.
 
 > Le contrat P7 de synchronisation Mobile ↔ Airtable ↔ PC est documenté et versionné. Voir [docs/AIRTABLE_SYNC_CONTRACT.md](docs/AIRTABLE_SYNC_CONTRACT.md).
 
@@ -67,6 +67,8 @@ La phase P9 ajoute une boîte de réception alimentée par la playlist Spotify `
 
 Chaque morceau synchronisé reste localement **À décider** jusqu’à une action explicite. **Préparer** ouvre l’éditeur de métadonnées existant et enverra ensuite la ligne Airtable avec `Source = Shazam`. **Ignorer** conserve la décision localement afin que le morceau ne revienne pas lors des synchronisations suivantes. L’application ne crée jamais automatiquement une ligne Airtable depuis la playlist.
 
+**Écouter / Pause** pilote le client Spotify actif depuis la liste, avec Spotify Premium. **Spotify** ouvre directement le morceau dans l’application Spotify ou, si elle n’est pas installée, dans le navigateur. Une session créée avant la version 1.1.1 doit être reconnectée une fois pour autoriser le contrôle de lecture.
+
 La synchronisation s’effectue à l’ouverture de la boîte Shazam, par actualisation manuelle et périodiquement sous les contraintes Android. La première lecture est paginée et importe l’historique disponible du plus récent au plus ancien.
 
 La création de l’application Spotify, la Redirect URI et le dépannage sont détaillés dans [docs/SPOTIFY_SHAZAM.md](docs/SPOTIFY_SHAZAM.md).
@@ -75,7 +77,7 @@ La création de l’application Spotify, la Redirect URI et le dépannage sont d
 
 Dans **Réglages → Enrichissement Soundcharts**, l’option peut être activée avec un `App ID` et une `API Key` legacy existants, puis testée. L’application interroge l’endpoint officiel `GET /api/v2.25/song/by-platform/spotify/{id}` à partir du Spotify Track ID et en extrait l’ISRC ainsi que les genres `root`/`sub`, conservés dans leur ordre sous forme de texte brut dédoublonné.
 
-Soundcharts recommande désormais OAuth côté serveur. Le mode direct mobile `x-app-id` / `x-api-key` est donc réservé aux comptes disposant déjà de ces identifiants legacy ; aucun nouveau secret ne doit être intégré au code ou distribué dans l’APK.
+Soundcharts recommande désormais des jetons d’accès obtenus avec un Client ID et un Client Secret côté serveur. Le mode direct mobile `x-app-id` / `x-api-key` est donc réservé aux comptes disposant déjà de ces identifiants legacy ; aucun nouveau secret ne doit être intégré au code ou distribué dans l’APK.
 
 L’enrichissement reste non bloquant : une erreur d’authentification, un morceau absent ou une limite de requêtes n’empêche jamais l’envoi ni l’enregistrement d’un brouillon. Un genre ou un ISRC déjà saisi est conservé. Si Soundcharts propose un genre différent, l’aperçu affiche une suggestion et demande explicitement de choisir **Remplacer par la suggestion**.
 

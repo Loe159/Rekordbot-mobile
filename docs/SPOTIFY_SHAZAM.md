@@ -10,7 +10,7 @@ Rekordbot Mobile lit la playlist Spotify alimentée automatiquement par Shazam. 
 4. Ne jamais renseigner ni distribuer le Client Secret : l’application utilise Authorization Code avec PKCE.
 5. Vérifier que le compte Spotify utilisé fait partie des utilisateurs autorisés de l’application en Development Mode.
 
-Le seul scope demandé est `playlist-read-private`. Rekordbot Mobile ne peut donc ni modifier les playlists ni contrôler la lecture Spotify.
+Les scopes demandés sont `playlist-read-private` et `user-modify-playback-state`. Le premier lit la playlist Shazam ; le second permet uniquement de lancer ou mettre en pause un morceau sur le client Spotify actif. Rekordbot Mobile ne peut pas modifier les playlists.
 
 ## Première synchronisation
 
@@ -27,6 +27,8 @@ La première synchronisation lit toutes les pages disponibles. Les suivantes dé
 - **Ignorer** masque durablement le morceau de la liste à traiter.
 - **Ignorés** permet de consulter ces morceaux et de les remettre à traiter.
 - **Déjà présent** indique qu’une entrée correspondant au Spotify Track ID existe déjà.
+- **Écouter / Pause** pilote le client Spotify actif sans quitter la liste. Cette fonction nécessite Spotify Premium. Les utilisateurs déjà connectés avant la version 1.1.1 doivent autoriser une fois la pré-écoute.
+- **Spotify** ouvre directement le morceau dans l’application Spotify, ou dans le navigateur si elle n’est pas installée.
 
 ## Sécurité et limites Spotify
 
@@ -35,5 +37,6 @@ La première synchronisation lit toutes les pages disponibles. Les suivantes dé
 - Les nouvelles applications Spotify en Development Mode sont soumises aux limites de compte et d’utilisateurs imposées par Spotify.
 - En 2026, Rekordbot utilise le nouvel endpoint `GET /playlists/{id}/items`; la playlist doit appartenir au compte connecté ou être collaborative.
 - Une synchronisation périodique Android n’est pas instantanée et peut être retardée par l’économie de batterie.
+- La pré-écoute utilise le lecteur Spotify actif : si aucun appareil n’est actif, ouvrir Spotify une première fois puis revenir dans Rekordbot Mobile.
 
-Références : [OAuth PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow), [Redirect URIs](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri), [Get Current User’s Playlists](https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists), [Get Playlist Items](https://developer.spotify.com/documentation/web-api/reference/get-playlists-items).
+Références : [OAuth PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow), [Redirect URIs](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri), [Get Current User’s Playlists](https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists), [Get Playlist Items](https://developer.spotify.com/documentation/web-api/reference/get-playlists-items), [Start/Resume Playback](https://developer.spotify.com/documentation/web-api/reference/start-a-users-playback).
